@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow
 from PyQt5 import QtWidgets
 from passcode import Ui_Dialog
 from home_screen import HomeScreen
-
+### this is gun comment ###
 passcodes = ''
 
 class MyApp(QMainWindow):
