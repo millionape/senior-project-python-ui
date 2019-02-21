@@ -12,12 +12,13 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class HomeScreen(object):
     def setupHomeScreen(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(834, 601)
+        Dialog.resize(800, 480)
         self.label = QtWidgets.QLabel(Dialog)
         self.label.setGeometry(QtCore.QRect(290, 230, 231, 91))
         font = QtGui.QFont()
         font.setPointSize(30)
         self.label.setFont(font)
+        self.label.setGeometry(QtCore.QRect(70, 80, 320, 240)) #(x, y, width, height)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
 

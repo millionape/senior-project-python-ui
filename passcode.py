@@ -13,7 +13,7 @@ from functools import partial
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(834, 601)
+        Dialog.resize(800, 480)
         self.btn_1 = QtWidgets.QPushButton(Dialog)
         self.btn_1.setGeometry(QtCore.QRect(160, 160, 100, 90))
         self.btn_1.setObjectName("btn_1")
