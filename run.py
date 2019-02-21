@@ -11,19 +11,8 @@ class MyApp(QMainWindow):
         QWidget.__init__(self, parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
-
-        self.ui.btn_1.clicked.connect(lambda: self.enterCode('1'))
-        self.ui.btn_2.clicked.connect(lambda: self.enterCode('2'))
-        self.ui.btn_3.clicked.connect(lambda: self.enterCode('3'))
-        self.ui.btn_4.clicked.connect(lambda: self.enterCode('4'))
-        self.ui.btn_5.clicked.connect(lambda: self.enterCode('5'))
-        self.ui.btn_6.clicked.connect(lambda: self.enterCode('6'))
-        self.ui.btn_7.clicked.connect(lambda: self.enterCode('7'))
-        self.ui.btn_8.clicked.connect(lambda: self.enterCode('8'))
-        self.ui.btn_9.clicked.connect(lambda: self.enterCode('9'))
-        self.ui.btn_0.clicked.connect(lambda: self.enterCode('0'))
-        self.ui.btn_del.clicked.connect(self.enterDelete)
-
+    def printTest(self):
+        print('clicked !!!!!')
     def enterCode(self, n) :
         global passcodes
         passcodes += n
@@ -40,6 +29,7 @@ class MyApp(QMainWindow):
         for i in range(n):
             text += '*'
         self.ui.password_field.setText(text)
+        self.ui.password_field.repaint()
     def checkPassword(self):
         global passcodes
         if(len(passcodes) >= 4):

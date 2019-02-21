@@ -7,6 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from functools import partial
 
 
 class Ui_Dialog(object):
@@ -49,18 +50,33 @@ class Ui_Dialog(object):
         self.password_field = QtWidgets.QLabel(Dialog)
         self.password_field.setGeometry(QtCore.QRect(280, 80, 240, 50))
         self.password_field.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        font = QtGui.QFont()
+        font.setPointSize(50)
+        font.setBold(True)
+        self.password_field.setFont(font)
         self.password_field.setText("")
         self.password_field.setAlignment(QtCore.Qt.AlignCenter)
         self.password_field.setObjectName("password_field")
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setGeometry(QtCore.QRect(300, 40, 200, 30))
-        font = QtGui.QFont()
         font.setPointSize(18)
         self.label_2.setFont(font)
         self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
 
         self.retranslateUi(Dialog)
+        ####################
+        self.btn_1.clicked.connect(partial(Dialog.enterCode, '1'))
+        self.btn_2.clicked.connect(partial(Dialog.enterCode, '2'))
+        self.btn_3.clicked.connect(partial(Dialog.enterCode, '3'))
+        self.btn_4.clicked.connect(partial(Dialog.enterCode, '4'))
+        self.btn_5.clicked.connect(partial(Dialog.enterCode, '5'))
+        self.btn_6.clicked.connect(partial(Dialog.enterCode, '6'))
+        self.btn_7.clicked.connect(partial(Dialog.enterCode, '7'))
+        self.btn_8.clicked.connect(partial(Dialog.enterCode, '8'))
+        self.btn_9.clicked.connect(partial(Dialog.enterCode, '9'))
+        self.btn_0.clicked.connect(partial(Dialog.enterCode, '0'))
+        self.btn_del.clicked.connect(Dialog.enterDelete)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
