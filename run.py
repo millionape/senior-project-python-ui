@@ -6,7 +6,7 @@ from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 from passcode import Ui_Dialog
-from home_screen import HomeScreen
+from home import HomeScreen
 import cv2
 import hashlib
 from pyfingerprint.pyfingerprint import PyFingerprint
@@ -20,6 +20,35 @@ import pickle
 from PIL import Image, ImageDraw
 import face_recognition
 from face_recognition.face_recognition_cli import image_files_in_folder
+import pyrebase
+import json
+import serial
+import threading
+import time
+port = '/dev/tty.usbserial-1410'
+baud = 115200
+ser = serial.Serial(port, baud)
+config = {
+    "apiKey": "AIzaSyBL8AZt1Oq2B1EuDOQ-su43SobhObUFdBc",
+    "authDomain": "final-project-80b54.firebaseapp.com",
+    "databaseURL": "https://final-project-80b54.firebaseio.com",
+    "storageBucket": "final-project-80b54.appspot.com",
+    "serviceAccount": "final-project-80b54-firebase-adminsdk-wm3vj-5a8bc8ff20.json"
+}
+firebase = pyrebase.initialize_app(config)
+auth = firebase.auth()
+uid = ""
+try:
+    user = auth.sign_in_with_email_and_password("pote@ku.th", "123456")
+        # before the 1 hour expiry:
+    user = auth.refresh(user['refreshToken'])
+        # now we have a fresh token
+    uid = user['userId']
+    print(user['userId'])
+except:
+    print("error")
+
+db = firebase.database()
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 passAuth = False
@@ -62,9 +91,28 @@ class Thread(QThread):
             #self.terminate()
 class HomeApp(QMainWindow):
     def __init__(self, parent=None):
+        global uid
         QWidget.__init__(self, parent)
         self.ui = HomeScreen()
         self.ui.setupHomeScreen(self)
+        all_users = db.child(uid).get()
+        #print("THIS IS DATA ::::: {}".format(str(all_users)))
+        for user in all_users.each():
+            print(user.key()) # Morty
+            print(user.val()) # {name": "Mortimer 'Morty' Smith"}
+            self.ui.pushButton = QtWidgets.QPushButton(self.ui.gridLayoutWidget)
+            self.ui.pushButton.setFixedSize( 100, 100 )
+            self.ui.pushButton.setObjectName(str(user.key()))
+            self.ui.pushButton.setText(user.key())
+            self.ui.gridLayout.addWidget(self.ui.pushButton)
+            self.ui.pushButton.clicked.connect(lambda: self.buttonPress(str(user.key())))
+    def buttonPress(self,x):
+        print(x)
+        
+
+        
+        
+        
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
@@ -260,7 +308,7 @@ class MyApp(QMainWindow):
                 print('Correct')
                 #self.hide()
                 passAuth = True
-                if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
+                if True:#faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                         faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                         homeapp = HomeApp(self)
                         homeapp.show()
@@ -310,7 +358,65 @@ class MyApp(QMainWindow):
                     pickle.dump(knn_clf, f)
 
             return knn_clf
+ 
+def stream_handler(message):
+    if type(message["data"]) is dict:
+        # print("first run value")
+        # print(message["data"])
+        #print(message["path"])
+        nodeID = message["path"].replace("/","")
+        print(nodeID)
+        offForm = "!OFF,{}".format(nodeID)
+        onForm = "!ON,{}".format(nodeID)
+        if len(message["data"]) <= 1:
+            if message["data"]["status"] == "0":
+                ser.write(offForm.encode())
+                print('serial write off')
+            else:
+                ser.write(onForm.encode())
+                print('serial write on')
+        else:
+            for x,y in message["data"].items():
+                print(x)
+                print(y["status"])
+                if y["status"] == "0":
+                    offForm2 = "!OFF,{}".format(x)
+                    ser.write(offForm2.encode())
+                    time.sleep(1)
+                    #ser.flushInput()
+                    print('serial write off')
+                else:
+                    onForm2 = "!ON,{}".format(x)
+                    ser.write(onForm2.encode())
+                    time.sleep(1)
+                    #ser.flushInput()
+                    print('serial write on')
+            
+    else:
+        if message["path"].split("/")[2] == "status":
+            print("updated node id is {} value is {}".format(message["path"].split("/")[1],message["data"]))
+            if message["data"] == "0":
+                offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
+                ser.write(offForm3.encode())
+                print('serial write off')
+            else:
+                onForm3 = "!ON,{}".format(message["path"].split("/")[1])
+                ser.write(onForm3.encode())
+                print('serial write on')
 
+if uid != "":
+    my_stream = db.child(uid).stream(stream_handler)
+
+connected = False
+def handle_data(data):
+    print(data)
+def read_from_port(ser):
+        while True:
+            reading = ser.readline().decode()
+            print("from ESP :{}".format(reading))
+
+thread = threading.Thread(target=read_from_port, args=(ser,))
+thread.start()
 
                 
 
