@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow ,QMessageBox
-
+from functools import partial
 from PyQt5.QtGui import QPixmap, QImage                                
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
@@ -99,14 +99,20 @@ class HomeApp(QMainWindow):
         #print("THIS IS DATA ::::: {}".format(str(all_users)))
         for user in all_users.each():
             print(user.key()) # Morty
-            print(user.val()) # {name": "Mortimer 'Morty' Smith"}
+            print(user.val())
+            print(type(user.val())) # {name": "Mortimer 'Morty' Smith"}
             self.ui.pushButton = QtWidgets.QPushButton(self.ui.gridLayoutWidget)
             self.ui.pushButton.setFixedSize( 100, 100 )
             self.ui.pushButton.setObjectName(str(user.key()))
-            self.ui.pushButton.setText(user.key())
+            self.ui.pushButton.setText(str(user.val().get("room")) + "\n" + str(user.val().get("type")))
             self.ui.gridLayout.addWidget(self.ui.pushButton)
-            self.ui.pushButton.clicked.connect(lambda: self.buttonPress(str(user.key())))
+            self.ui.pushButton.clicked.connect(partial(self.buttonPress, user.key()))
     def buttonPress(self,x):
+        now_state = db.child(uid).child(x).child('status').get()
+        if now_state.val() == "0":
+            db.child(uid).child(x).update({"status":"1"})
+        else:
+            db.child(uid).child(x).update({"status":"0"})
         print(x)
         
 
