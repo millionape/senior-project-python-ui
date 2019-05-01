@@ -13,8 +13,10 @@ class HomeScreen(object):
     def setupHomeScreen(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(800, 480)
+        Dialog.setStyleSheet("background-color:#7391A6;")
         self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(20, 30, 411, 351))
+        self.gridLayoutWidget.setStyleSheet("background-color:#1B4F6C;")
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(20, 20, 500, 400))
         self.gridLayoutWidget.setObjectName("gridLayoutWidget")
         self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)

@@ -2,7 +2,7 @@
 import sys
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow ,QMessageBox
 from functools import partial
-from PyQt5.QtGui import QPixmap, QImage                                
+from PyQt5.QtGui import QPixmap, QImage  ,QFont                              
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 from passcode import Ui_Dialog
@@ -28,6 +28,7 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
+
 authEmail = ""
 authPass = ""
 port = '/dev/tty.usbserial-1410'
@@ -54,11 +55,10 @@ bleAuth = False
 passcodes = ''
 class ThreadQR(QThread):
     changePixmap = pyqtSignal(QImage)
-    state = pyqtSignal()
+    state = pyqtSignal(int)
     take = pyqtSignal(np.ndarray)
     imgSave = None
     flag = True
-    #cap = cv2.VideoCapture(0)
     def run(self):
         global uid
         global auth
@@ -80,7 +80,6 @@ class ThreadQR(QThread):
                             print(b['user'],b['password'])  
                             cv2.putText(rgbImage,b['user'], (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                 5, (0, 0, 255), 2)  
-                            
                             try:
                                 user = auth.sign_in_with_email_and_password(b['user'], b['password'])
                                     # before the 1 hour expiry:
@@ -90,30 +89,19 @@ class ThreadQR(QThread):
                                 print("this is uid from thread :{}".format(uid))
                                 with open('auth.json', 'w') as outfile:  
                                     json.dump(b, outfile)
-                                self.state.emit()
+                                self.state.emit(1)
                                 self.stop()
                                 self.cap.release() 
-                                
                             except:
-                                print('some error')
-                            
-                            # self.state.emit()
-                            
+                                # Auth failue
+                                print('some error : auth fail')
+                                self.state.emit(0)                       
                         else:
                             cv2.putText(rgbImage,"QR code is not correct", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                 5, (0, 0, 255), 2)  
                     except:
-                        cv2.putText(rgbImage,"Format error", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                            5, (0, 0, 255), 2)  
-
-                    
-                    
-                    
-                
-                    # print the barcode type and data to the terminal
+                        pass
                     print("[INFO] Found {} barcode: {}".format(barcodeType, barcodeData))
-                #p = QPixmap.fromImage(rgbImage)    
-                #p = p.scaled(640, 480, Qt.KeepAspectRatio)
                 convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
                 p = convertToQtFormat.scaled(350, 220)
                 self.imgSave = rgbImage
@@ -126,39 +114,57 @@ class ThreadQR(QThread):
             self.take.emit(self.imgSave)
     def stop(self):
             self.flag = False
-            #self.quit()
             self.cap.release()
-            #self.state.emit()
-            #self.quit()
-            #self.terminate()
 class MyAppSignIn(QMainWindow):
     img1 = None
     @pyqtSlot(QImage)
     def setImage(self, image):
-        #self.img1 = QPixmap.fromImage(image)
         self.ui.label_2.setPixmap(QPixmap.fromImage(image))
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.ui = Ui_SignIn()
         self.ui.setupUi(self)
         self.blank_image = np.zeros((350,350,3), np.uint8)
-        #self.blank_image[:,0:256//2] = (224,224,224)      # (B, G, R)
-        #self.blank_image[:,256//2:256] = (0,0,0)
         cv2.putText(self.blank_image,"Welcome", (40,50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255,255,255))
         self.convertToQtFormat = QImage(self.blank_image.data, self.blank_image.shape[1], self.blank_image.shape[0], QImage.Format_RGB888)
         self.ui.label_2.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
         
-        th = ThreadQR(self)
-        th.changePixmap.connect(self.setImage)
-        th.state.connect(self.authPass)
-        th.start()
+        self.th = ThreadQR(self)
+        self.th.changePixmap.connect(self.setImage)
+        self.th.state.connect(self.authPass)
+        self.th.start()
+    def msgbtn(self,i):
+        print ("Button pressed is:",i.text())
+        self.th = ThreadQR(self)
+        self.th.changePixmap.connect(self.setImage)
+        self.th.state.connect(self.authPass)
+        self.th.start()
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            print('esc')
+            self.th.stop()
+            self.close()
+    def authPass(self,x):
+        if x == 1:
+            print('auth pass')
+            myappDash = MyApp()
+            myappDash.show()
+            self.close()
+        else:
+            self.th.stop()
+            print("auth not pass")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
 
-    def authPass(self):
-        print('auth pass')
-
-        myappDash = MyApp()
-        myappDash.show()
-        self.close()
+            msg.setText("Authentication fail.")
+            msg.setInformativeText("Please re sign in.")
+            msg.setWindowTitle("Warnning !!!")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.buttonClicked.connect(self.msgbtn)
+            
+            retval = msg.exec_()
+            print ("value of pressed message box button:", retval)
 
 class Thread(QThread):
     changePixmap = pyqtSignal(QImage)
@@ -198,30 +204,46 @@ class HomeApp(QMainWindow):
         QWidget.__init__(self, parent)
         self.ui = HomeScreen()
         self.ui.setupHomeScreen(self)
+        font = QFont()
+        font.setPointSize(18) 
         all_users = db.child(uid).get()
+        if all_users != None:
+            with open('nodeInfo.json', 'w') as outfile:  
+                json.dump(all_users.val(), outfile)
         #print("THIS IS DATA ::::: {}".format(str(all_users)))
         for user in all_users.each():
             print(user.key()) # Morty
             print(user.val())
             print(type(user.val())) # {name": "Mortimer 'Morty' Smith"}
             self.ui.pushButton = QtWidgets.QPushButton(self.ui.gridLayoutWidget)
-            self.ui.pushButton.setFixedSize( 100, 100 )
+            self.ui.pushButton.setFixedSize( 130, 100 )
             self.ui.pushButton.setObjectName(str(user.key()))
-            self.ui.pushButton.setText(str(user.val().get("room")) + "\n" + str(user.val().get("type")))
+            self.ui.pushButton.setFont(font)
+            self.ui.pushButton.setText(str(user.val().get("room")) + "\n type : " + str(user.val().get("type")))
+            if user.val().get('status') == '0':
+                self.ui.pushButton.setStyleSheet('background-color:#002330;color:#FFFFFF;') 
+            else:
+                self.ui.pushButton.setStyleSheet('background-color:#20BF55;color:#000000;') 
+            #self.ui.pushButton.setStyleSheet("QPushButton { background-color:#002330; }"
+            #                                    "QPushButton:pressed { background-color: #20BF55; }") 
+            
             self.ui.gridLayout.addWidget(self.ui.pushButton)
-            self.ui.pushButton.clicked.connect(partial(self.buttonPress, user.key()))
-    def buttonPress(self,x):
+            self.ui.pushButton.clicked.connect(partial(self.buttonPress, user.key() , self.ui.pushButton))
+    def buttonPress(self,x,buttonObject):
+        #buttonObject.setText("hello")
+        global ser
+        offForm = "!OFF,{}".format(x)
+        onForm = "!ON,{}".format(x)
         now_state = db.child(uid).child(x).child('status').get()
         if now_state.val() == "0":
+            buttonObject.setStyleSheet('background-color:#20BF55;color:#000000;') 
             db.child(uid).child(x).update({"status":"1"})
+            ser.write(onForm.encode())
         else:
+            buttonObject.setStyleSheet('background-color:#002330;color:#FFFFFF;')
             db.child(uid).child(x).update({"status":"0"})
+            ser.write(offForm.encode())
         print(x)
-        
-
-        
-        
-        
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
@@ -237,15 +259,11 @@ class MyApp(QMainWindow):
         QWidget.__init__(self, parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
-        self.blank_image = np.zeros((200,256,3), np.uint8)
-        #self.blank_image[:,0:256//2] = (224,224,224)      # (B, G, R)
-        #self.blank_image[:,256//2:256] = (0,0,0)
-        cv2.putText(self.blank_image,"Welcome", (40,50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255,255,255))
-        self.convertToQtFormat = QImage(self.blank_image.data, self.blank_image.shape[1], self.blank_image.shape[0], QImage.Format_RGB888)
+        self.image = cv2.imread('images/facial.jpg')
+        self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.convertToQtFormat = QImage(self.image.data, self.image.shape[1], self.image.shape[0], QImage.Format_RGB888)
         self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
-        #th = Thread(self)
-        #th.changePixmap.connect(self.setImage)
-        #th.start()
+        self.ui.label_3.mousePressEvent = self.takePhoto
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
@@ -366,7 +384,7 @@ class MyApp(QMainWindow):
                     self.ui.btn_photo.setText("Take photo")
                     self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
             print("photo saved!")
-    def takePhoto(self):
+    def takePhoto(self,event):
         print("Taking photos...")
         self.th = Thread(self)
         self.th.changePixmap.connect(self.setImage)
@@ -381,9 +399,9 @@ class MyApp(QMainWindow):
         QTimer.singleShot(4200, lambda: self.th.stop())
         QTimer.singleShot(5500, lambda: self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat)))
         QTimer.singleShot(4000, lambda: self.ui.btn_photo.setDisabled(False))
-        QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Taking..(3)"))
-        QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Taking..(2)"))
-        QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Taking..(1)"))
+        QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Hold..(3)"))
+        QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Hold..(2)"))
+        QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Hold..(1)"))
         QTimer.singleShot(3500, lambda: self.th.take_photo())
         #QTimer.singleShot(7100, lambda: self.ui.btn_photo.setText("Take a photo"))
     def printTest(self):
