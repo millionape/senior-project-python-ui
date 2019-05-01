@@ -28,7 +28,7 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-
+USB_FINGER_PORT = '/dev/ttyUSB0'
 authEmail = ""
 authPass = ""
 port = '/dev/tty.usbserial-1410'
@@ -272,7 +272,7 @@ class MyApp(QMainWindow):
     def waitToScan(self):
         print("wait to scan")
         try:
-            f = PyFingerprint('/dev/ttyUSB0', 57600, 0xFFFFFFFF, 0x00000000)
+            f = PyFingerprint(USB_FINGER_PORT, 57600, 0xFFFFFFFF, 0x00000000)
 
             if ( f.verifyPassword() == False ):
                 raise ValueError('The given fingerprint sensor password is wrong!')
