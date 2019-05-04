@@ -32,7 +32,12 @@ class Ui_SignIn(object):
         self.label_3.setObjectName("label_3")
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setStyleSheet("background-color:#145374;")
-        self.pushButton.setGeometry(QtCore.QRect(660, 390, 113, 70))
+        self.pushButton.setGeometry(QtCore.QRect(600, 390, 160, 70))
+
+        self.pushButton2 = QtWidgets.QPushButton(Dialog)
+        self.pushButton2.setStyleSheet("background-color:#145374;")
+        self.pushButton2.setGeometry(QtCore.QRect(600, 390, 160, 70))
+
         font = QtGui.QFont()
         font.setPointSize(20)
         self.pushButton.setFont(font)
@@ -48,5 +53,5 @@ class Ui_SignIn(object):
         self.label.setText(_translate("Dialog", "Welcome To Home Automation System"))
         self.label_2.setText(_translate("Dialog", "TextLabel"))
         self.label_3.setText(_translate("Dialog", "Please scan QRcode for Sign in"))
-        self.pushButton.setText(_translate("Dialog", "Other"))
-
+        self.pushButton.setText(_translate("Dialog", "Take Photos."))
+        self.pushButton2.setText(_translate("Dialog", "Start"))

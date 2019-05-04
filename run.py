@@ -28,7 +28,8 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-USB_FINGER_PORT = '/dev/ttyUSB0'
+#USB_FINGER_PORT = '/dev/ttyUSB0'
+USB_FINGER_PORT = '/dev/tty.usbserial'
 authEmail = ""
 authPass = ""
 port = '/dev/tty.usbserial-1410'
@@ -45,7 +46,7 @@ firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
 uid = ""
 db = firebase.database()
-
+buttonDict = {}
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 passAuth = False
 faceAuth = False
@@ -115,6 +116,126 @@ class ThreadQR(QThread):
     def stop(self):
             self.flag = False
             self.cap.release()
+class ThreadFace(QThread):
+    changePixmap = pyqtSignal(QImage)
+    stateFace = pyqtSignal(int)
+    take = pyqtSignal(np.ndarray)
+    imgSave = None
+    flag = True
+    takeFlag = False
+    count = 0
+    def run(self):
+        global uid
+        global auth
+        self.cap = cv2.VideoCapture(0)
+        while self.cap.isOpened() and self.flag:
+            ret, frame = self.cap.read()
+            if ret:
+                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                if self.takeFlag and self.count<30:
+                    self.count += 1
+                    cv2.putText(rgbImage,"Taking Photos :{}".format(self.count), (0,120), cv2.FONT_HERSHEY_SIMPLEX,3, (0, 0, 255), 2) 
+                    cv2.imwrite('facesImage/0{}.png'.format(self.count),rgbImage)
+                if self.count >= 30:
+                    self.stateFace.emit(1)
+                    self.cap.release() 
+                convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+                p = convertToQtFormat.scaled(350, 220)
+                self.imgSave = rgbImage
+                self.changePixmap.emit(p)
+    def __del__(self):
+        self.flag = False
+        self.quit()
+        self.wait()
+    def take_photo(self):
+        self.takeFlag = True
+        #self.take.emit(self.imgSave)
+    def stop(self):
+        self.flag = False
+        self.cap.release()
+class ThreadFinger(QThread):
+    changePixmap = pyqtSignal(QImage)
+    stateFinger = pyqtSignal(int)
+    take = pyqtSignal(np.ndarray)
+    imgSave = None
+    flag = True
+    takeFlag = False
+    count = 0
+    def run(self):
+        try:
+            f = PyFingerprint(USB_FINGER_PORT, 57600, 0xFFFFFFFF, 0x00000000)
+            if ( f.verifyPassword() == False ):
+                raise ValueError('The given fingerprint sensor password is wrong!')
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("Error")
+            msg.setInformativeText("fingerprint sensor could not be initialized!")
+            msg.setWindowTitle("Error.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            retval = msg.exec_()
+            if retval == QMessageBox.Ok:
+                print('The fingerprint sensor could not be initialized!')
+                print('Exception message: ' + str(e))
+                exit(1)
+        print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
+        if f.getTemplateCount() > 0:
+            try:
+                for i in range(f.getTemplateCount()):
+                    if ( f.deleteTemplate(i) == True ):
+                        print('Template deleted!')
+
+            except Exception as e:
+                print('Operation failed!')
+                print('Exception message: ' + str(e))
+                exit(1)
+        try:
+            self.stateFinger.emit(1)
+            print('Waiting for finger...')
+            while ( f.readImage() == False ):
+                pass
+            f.convertImage(0x01)
+            result = f.searchTemplate()
+            positionNumber = result[0]
+            if ( positionNumber >= 0 ):
+                # self.ui.label_2.setText('This finger already exists at position #' + str(positionNumber))
+                print('Template already exists at position #' + str(positionNumber))
+                exit(0)
+            self.stateFinger.emit(2)
+            #self.ui.label_2.setText("Step 2: Remove your finger from the sensor.")
+            print('Remove finger...')
+            time.sleep(2)
+            self.stateFinger.emit(3)
+            #self.ui.label_2.setText("Step 3: Put your finger on the sensor again.")
+            print('Waiting for same finger again...')
+            while ( f.readImage() == False ):
+                time.sleep(0.2)
+                pass
+            f.convertImage(0x02)
+            if ( f.compareCharacteristics() == 0 ):
+                raise Exception('Fingers do not match')
+                self.stateFinger.emit(5)
+            f.createTemplate()
+            positionNumber = f.storeTemplate()
+            # self.ui.label_2.setText("Finger enrolled successfully!")
+            print('Finger enrolled successfully!')
+            print('New template position #' + str(positionNumber))
+            self.stateFinger.emit(4)
+        except Exception as e:
+            print('Operation failed!')
+            print('Exception message: ' + str(e))
+            exit(1)
+
+    def __del__(self):
+        self.flag = False
+        self.quit()
+        self.wait()
+    def take_photo(self):
+        self.takeFlag = True
+        #self.take.emit(self.imgSave)
+    def stop(self):
+        self.flag = False
+        self.cap.release()
 class MyAppSignIn(QMainWindow):
     img1 = None
     @pyqtSlot(QImage)
@@ -124,15 +245,69 @@ class MyAppSignIn(QMainWindow):
         QWidget.__init__(self, parent)
         self.ui = Ui_SignIn()
         self.ui.setupUi(self)
+        self.ui.pushButton.hide()
+        self.ui.pushButton2.hide()
+        self.ui.pushButton2.clicked.connect(self.enrollFinger)
         self.blank_image = np.zeros((350,350,3), np.uint8)
         cv2.putText(self.blank_image,"Welcome", (40,50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255,255,255))
         self.convertToQtFormat = QImage(self.blank_image.data, self.blank_image.shape[1], self.blank_image.shape[0], QImage.Format_RGB888)
         self.ui.label_2.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
-        
+        self.thf = ThreadFace(self)
+        self.thf.changePixmap.connect(self.setImage)
+        self.thf.stateFace.connect(self.faceCapture)
+
+        self.thFinger = ThreadFinger(self)
+        self.thFinger.stateFinger.connect(self.showLabel)
+
+        self.ui.pushButton.clicked.connect(self.thf.take_photo)
         self.th = ThreadQR(self)
         self.th.changePixmap.connect(self.setImage)
         self.th.state.connect(self.authPass)
         self.th.start()
+
+    def enrollFinger(self):
+        self.thFinger.start()
+    def showLabel(self,x):
+        if x==1:
+            self.ui.label_2.setText("Step 1: Put your finger on the sensor.")
+        elif x==2:
+            self.ui.label_2.setText("Step 2: Remove your finger from the sensor.")
+        elif x==3:
+            self.ui.label_2.setText("Step 3: Put your finger on the sensor again.")
+        elif x==4:
+            self.ui.label_2.setText("Success enroll new finger.")
+            myappDash = MyApp()
+            myappDash.show()
+            self.close()
+        elif x==5:
+            self.ui.label_2.setText("Error finger doesn't match , Please start again.")
+            self.thFinger.stop()
+
+         
+
+
+            
+
+    def faceCapture(self,x):
+        print("Face capture success")
+        self.thf.stop()
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("Success")
+        msg.setInformativeText("Next please enroll your fingerprint.")
+        msg.setWindowTitle("Success.")
+        msg.setStandardButtons(QMessageBox.Ok)
+        retval = msg.exec_()
+        if retval == QMessageBox.Ok:
+            print("okkkk")
+            self.ui.label_3.setText("")
+            self.ui.label_2.setText("Tap on start button for enroll your new finger.")
+            self.ui.pushButton.hide()
+            self.ui.pushButton2.show()
+            # myappDash = MyApp()
+            # myappDash.show()
+            # self.close()
+            
     def msgbtn(self,i):
         print ("Button pressed is:",i.text())
         self.th = ThreadQR(self)
@@ -148,9 +323,23 @@ class MyAppSignIn(QMainWindow):
     def authPass(self,x):
         if x == 1:
             print('auth pass')
-            myappDash = MyApp()
-            myappDash.show()
-            self.close()
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+
+            msg.setText("Authentication Success.")
+            msg.setInformativeText("Next please taking your face photos.")
+            msg.setWindowTitle("Success.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            #msg.buttonClicked.connect(self.msgbtn)
+            retval = msg.exec_()
+            if retval == QMessageBox.Ok:
+                self.ui.pushButton.show()
+                self.ui.label_3.setText("Please tap on \"TakePhotos\" button down below.")
+                self.thf.start()
+            
+            # myappDash = MyApp()
+            # myappDash.show()
+            #self.close()
         else:
             self.th.stop()
             print("auth not pass")
@@ -201,6 +390,7 @@ class Thread(QThread):
 class HomeApp(QMainWindow):
     def __init__(self, parent=None):
         global uid
+        global buttonDict
         QWidget.__init__(self, parent)
         self.ui = HomeScreen()
         self.ui.setupHomeScreen(self)
@@ -211,6 +401,7 @@ class HomeApp(QMainWindow):
             with open('nodeInfo.json', 'w') as outfile:  
                 json.dump(all_users.val(), outfile)
         #print("THIS IS DATA ::::: {}".format(str(all_users)))
+        
         for user in all_users.each():
             print(user.key()) # Morty
             print(user.val())
@@ -226,29 +417,87 @@ class HomeApp(QMainWindow):
                 self.ui.pushButton.setStyleSheet('background-color:#20BF55;color:#000000;') 
             #self.ui.pushButton.setStyleSheet("QPushButton { background-color:#002330; }"
             #                                    "QPushButton:pressed { background-color: #20BF55; }") 
-            
+            buttonDict[str(user.key())] = self.ui.pushButton
             self.ui.gridLayout.addWidget(self.ui.pushButton)
             self.ui.pushButton.clicked.connect(partial(self.buttonPress, user.key() , self.ui.pushButton))
+        print(buttonDict)
+
     def buttonPress(self,x,buttonObject):
         #buttonObject.setText("hello")
         global ser
-        offForm = "!OFF,{}".format(x)
-        onForm = "!ON,{}".format(x)
+        offForm = "!OFF,{}\r".format(x)
+        onForm = "!ON,{}\r".format(x)
         now_state = db.child(uid).child(x).child('status').get()
         if now_state.val() == "0":
+            ser.write(onForm.encode())
             buttonObject.setStyleSheet('background-color:#20BF55;color:#000000;') 
             db.child(uid).child(x).update({"status":"1"})
-            ser.write(onForm.encode())
         else:
+            ser.write(offForm.encode())
             buttonObject.setStyleSheet('background-color:#002330;color:#FFFFFF;')
             db.child(uid).child(x).update({"status":"0"})
-            ser.write(offForm.encode())
+            
         print(x)
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
             print('esc')
             self.close()
+
+class ThreadFingerCompare(QThread):
+    state = pyqtSignal(int)
+    def run(self):
+        try:
+            f = PyFingerprint(USB_FINGER_PORT, 57600, 0xFFFFFFFF, 0x00000000)
+
+            if ( f.verifyPassword() == False ):
+                raise ValueError('The given fingerprint sensor password is wrong!')
+        except Exception as e:
+            print('The fingerprint sensor could not be initialized!')
+            print('Exception message: ' + str(e))
+            exit(1)
+        print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
+        try:
+            print('Waiting for finger...')
+            while ( f.readImage() == False):
+                time.sleep(0.3)
+                pass
+            f.convertImage(0x01)
+            result = f.searchTemplate()
+            positionNumber = result[0]
+            accuracyScore = result[1]
+            if ( positionNumber == -1 ):
+                print('No match found!')
+                self.state.emit(2)
+                #return False
+                #exit(0)
+            else:
+                print('Found template at position #' + str(positionNumber))
+                print('The accuracy score is: ' + str(accuracyScore))
+            f.loadTemplate(positionNumber, 0x01)
+            characterics = str(f.downloadCharacteristics(0x01)).encode('utf-8')
+            myHash = str(hashlib.sha256(characterics).hexdigest())
+            print("the hash is :"+myHash)
+            if positionNumber != -1: #if myHash == "293122122adcc20688174f49c8cb2a330523616b41fc505cacb5a1f841c7e146":
+                print("finger print match !!")
+                self.state.emit(1)
+                # homeapp = HomeApp(self)
+                # homeapp.show()
+            else:
+                print("finger print doesn't match")
+                
+                    
+        except Exception as e:
+            print('Operation failed!')
+            print('Exception message: ' + str(e))
+            #exit(1)
+    def __del__(self):
+        self.flag = False
+        self.quit()
+        self.wait()
+    def stop(self):
+        self.terminate()
+        #self.stop()
 class MyApp(QMainWindow):
     img1 = None
     @pyqtSlot(QImage)
@@ -264,56 +513,34 @@ class MyApp(QMainWindow):
         self.convertToQtFormat = QImage(self.image.data, self.image.shape[1], self.image.shape[0], QImage.Format_RGB888)
         self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
         self.ui.label_3.mousePressEvent = self.takePhoto
+        self.thFingerCompare = ThreadFingerCompare(self)
+        #self.thFingerCompare.setTerminationEnabled(True)
+        self.thFingerCompare.state.connect(self.waitToScan)
+
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:
             print('esc')
             self.close()
-    def waitToScan(self):
-        print("wait to scan")
-        try:
-            f = PyFingerprint(USB_FINGER_PORT, 57600, 0xFFFFFFFF, 0x00000000)
-
-            if ( f.verifyPassword() == False ):
-                raise ValueError('The given fingerprint sensor password is wrong!')
-        except Exception as e:
-            print('The fingerprint sensor could not be initialized!')
-            print('Exception message: ' + str(e))
-            exit(1)
-        print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
-        try:
-            print('Waiting for finger...')
-            while ( f.readImage() == False ):
-                pass
-            f.convertImage(0x01)
-            result = f.searchTemplate()
-            positionNumber = result[0]
-            accuracyScore = result[1]
-            if ( positionNumber == -1 ):
-                print('No match found!')
-                return False
-                #exit(0)
-            else:
-                print('Found template at position #' + str(positionNumber))
-                print('The accuracy score is: ' + str(accuracyScore))
-            f.loadTemplate(positionNumber, 0x01)
-            characterics = str(f.downloadCharacteristics(0x01)).encode('utf-8')
-            myHash = str(hashlib.sha256(characterics).hexdigest())
-            print("the hash is :"+myHash)
-            if myHash == "cfce640e78de26420c6247705e9c975004415a583a0e4ad6202eb46f283db8e7":
-                    print("finger print match !!")
-                    homeapp = HomeApp(self)
-                    homeapp.show()
-            else:
-                    print("finger print doesn't match")
-        except Exception as e:
-            print('Operation failed!')
-            print('Exception message: ' + str(e))
-            exit(1)
+    def waitToScan(self,x):
+        if x == 1:
+            #self.thFingerCompare.stop()
+            homeapp = HomeApp(self)
+            homeapp.show()
+        elif x == 2:
+            #self.thFingerCompare.stop()
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("fingerprint doesn't match")
+            msg.setInformativeText("please try again.")
+            msg.setWindowTitle("Error.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            retval = msg.exec_()
             
     def fingerScan(self,x):
         print("finger scan button clicked!")
-        self.waitToScan()
+        self.thFingerCompare.start()
+        
     def closeCam(self):
         print("terminating.....")
         if self.th.isRunning():
@@ -357,52 +584,80 @@ class MyApp(QMainWindow):
             global fingerAuth
             #img1.save('tmp.png','PNG')
             cv2.imwrite("tmppic.jpg", img1)
-            predictions = self.predict(img1, model_path='trained_knn_model.clf')
-            if(len(predictions) >= 1):
-                for name, (top, right, bottom, left) in predictions:
-                        print("- Found {} at ({}, {})".format(name, left, top))
-                        if name != "unknown":
-                                faceAuth = True
-                                self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
-                                self.ui.btn_photo.setText(name)
-                                self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: green;}')
-                                if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
-                                        faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
-                                        homeapp = HomeApp(self)
-                                        homeapp.show()
-                                else:
-                                        QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
-                        else:
-                                print("Unknown !!!!")
-                                QMessageBox.about(self, "Info", "Face doesn't match")
-                                self.ui.btn_photo.setText("Take photo")
-                                self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: red;}')
-                                
-            else:
-                    print("not match")
-                    QMessageBox.about(self, "Info", "Face doesn't match")
-                    self.ui.btn_photo.setText("Take photo")
-                    self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
-            print("photo saved!")
+            flag = False
+            try:
+                fh = open('trained_knn_model.clf', 'r')
+                fh.close()
+                flag=True
+            except FileNotFoundError:
+                QMessageBox.about(self, "Info", "Unable to locate faces.")
+                # Keep preset values
+            if flag:
+                predictions = self.predict(img1, model_path='trained_knn_model.clf')
+                if(len(predictions) >= 1):
+                    for name, (top, right, bottom, left) in predictions:
+                            print("- Found {} at ({}, {})".format(name, left, top))
+                            if name != "unknown":
+                                    faceAuth = True
+                                    self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat))
+                                    self.ui.btn_photo.setText(name)
+                                    self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: green;}')
+                                    if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
+                                            faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
+                                            homeapp = HomeApp(self)
+                                            homeapp.show()
+                                    else:
+                                            QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
+                            else:
+                                    print("Unknown !!!!")
+                                    QMessageBox.about(self, "Info", "Face doesn't match")
+                                    self.ui.btn_photo.setText("Take photo")
+                                    self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: red;}')
+                                    
+                else:
+                        print("not match")
+                        QMessageBox.about(self, "Info", "Face doesn't match")
+                        self.ui.btn_photo.setText("Take photo")
+                        self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
+                print("photo saved!")
     def takePhoto(self,event):
-        print("Taking photos...")
-        self.th = Thread(self)
-        self.th.changePixmap.connect(self.setImage)
-        self.th.state.connect(self.closeCam)
-        
-        self.th.take.connect(self.savePhoto)
-        
-        self.th.setTerminationEnabled(True)
-        self.th.start()
-        self.ui.btn_photo.setEnabled(False)
-        self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
-        QTimer.singleShot(4200, lambda: self.th.stop())
-        QTimer.singleShot(5500, lambda: self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat)))
-        QTimer.singleShot(4000, lambda: self.ui.btn_photo.setDisabled(False))
-        QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Hold..(3)"))
-        QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Hold..(2)"))
-        QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Hold..(1)"))
-        QTimer.singleShot(3500, lambda: self.th.take_photo())
+        flag = False
+        try:
+            fh = open('trained_knn_model.clf', 'r')
+            fh.close()
+            flag=True
+        except FileNotFoundError:
+            msgBox = QMessageBox()
+            msgBox.setText("Error")
+            msgBox.setInformativeText("Unable to locate faces. Do you want to add a new face")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+            msgBox.setDefaultButton(QMessageBox.Yes)
+            ret = msgBox.exec_()
+            if ret == QMessageBox.Yes:
+                print("Yes!!!!")
+            elif ret == QMessageBox.Cancel:
+                print("Nooooooooo!!!!")
+            #QMessageBox.about(self, "Info", "Unable to locate faces.")
+            # Keep preset values
+        if flag:
+            print("Taking photos...")
+            self.th = Thread(self)
+            self.th.changePixmap.connect(self.setImage)
+            self.th.state.connect(self.closeCam)
+            
+            self.th.take.connect(self.savePhoto)
+            
+            self.th.setTerminationEnabled(True)
+            self.th.start()
+            self.ui.btn_photo.setEnabled(False)
+            self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
+            QTimer.singleShot(4200, lambda: self.th.stop())
+            QTimer.singleShot(5500, lambda: self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat)))
+            QTimer.singleShot(4000, lambda: self.ui.btn_photo.setDisabled(False))
+            QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Hold..(3)"))
+            QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Hold..(2)"))
+            QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Hold..(1)"))
+            QTimer.singleShot(3500, lambda: self.th.take_photo())
         #QTimer.singleShot(7100, lambda: self.ui.btn_photo.setText("Take a photo"))
     def printTest(self):
         print('clicked !!!!!')
@@ -487,34 +742,47 @@ class MyApp(QMainWindow):
             return knn_clf
  
 def stream_handler(message):
+    global buttonDict
     if type(message["data"]) is dict:
         # print("first run value")
         # print(message["data"])
         #print(message["path"])
         nodeID = message["path"].replace("/","")
-        print(nodeID)
-        offForm = "!OFF,{}".format(nodeID)
-        onForm = "!ON,{}".format(nodeID)
+        #print(nodeID)
+        offForm = "!OFF,{}\r".format(nodeID)
+        onForm = "!ON,{}\r".format(nodeID)
+        #print("tag 5555")
         if len(message["data"]) <= 1:
+            print("tag 1111")
+            if buttonDict:
+                buttonStrem = buttonDict.get(nodeID)
+            print(type(buttonStrem))
             if message["data"]["status"] == "0":
+                if buttonDict:
+                    buttonStrem.setStyleSheet('background-color:#002330;color:#FFFFFF;')
+                #time.sleep(2.5)
+                
                 ser.write(offForm.encode())
                 print('serial write off')
             else:
+                if buttonDict:
+                    buttonStrem.setStyleSheet('background-color:#20BF55;color:#000000;') 
                 ser.write(onForm.encode())
+                #time.sleep(2.5)
                 print('serial write on')
         else:
             for x,y in message["data"].items():
                 print(x)
                 print(y["status"])
                 if y["status"] == "0":
-                    time.sleep(1.5)
+                    #time.sleep(2.5)
                     offForm2 = "!OFF,{}".format(x)
                     ser.write(offForm2.encode())
                     #time.sleep(2)
                     #ser.flushInput()
                     print('serial write off')
                 else:
-                    time.sleep(1.5)
+                    #time.sleep(2.5)
                     onForm2 = "!ON,{}".format(x)
                     ser.write(onForm2.encode())
                     #time.sleep(2)
@@ -526,10 +794,12 @@ def stream_handler(message):
             print("updated node id is {} value is {}".format(message["path"].split("/")[1],message["data"]))
             if message["data"] == "0":
                 offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
+                #time.sleep(2)
                 ser.write(offForm3.encode())
                 print('serial write off')
             else:
                 onForm3 = "!ON,{}".format(message["path"].split("/")[1])
+                #time.sleep(2)
                 ser.write(onForm3.encode())
                 print('serial write on')
 

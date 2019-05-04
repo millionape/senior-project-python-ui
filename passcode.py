@@ -25,7 +25,7 @@ class Ui_Dialog(object):
         self.btn_finger.setStyleSheet('background-color:#5588A3;color:#E8E8E8;') 
         self.btn_finger.setGeometry(QtCore.QRect(80, 320, 160, 60))
         self.btn_finger.setObjectName("btn_finger")
-        
+
         self.btn_photo = QtWidgets.QPushButton(Dialog)
         self.btn_photo.setFont(font)
         self.btn_photo.setStyleSheet('background-color:#5588A3;color:#E8E8E8;') 
