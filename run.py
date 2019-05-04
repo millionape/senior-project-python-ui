@@ -28,11 +28,12 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-#USB_FINGER_PORT = '/dev/ttyUSB0'
-USB_FINGER_PORT = '/dev/tty.usbserial'
+USB_FINGER_PORT = '/dev/ttyUSB1'
+#USB_FINGER_PORT = '/dev/tty.usbserial'
 authEmail = ""
 authPass = ""
-port = '/dev/tty.usbserial-1410'
+#port = '/dev/tty.usbserial-1410'
+port = '/dev/ttyUSB0'
 baud = 115200
 ser = serial.Serial(port, baud)
 config = {
