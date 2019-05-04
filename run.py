@@ -507,15 +507,17 @@ def stream_handler(message):
                 print(x)
                 print(y["status"])
                 if y["status"] == "0":
+                    time.sleep(1.5)
                     offForm2 = "!OFF,{}".format(x)
                     ser.write(offForm2.encode())
-                    time.sleep(1)
+                    #time.sleep(2)
                     #ser.flushInput()
                     print('serial write off')
                 else:
+                    time.sleep(1.5)
                     onForm2 = "!ON,{}".format(x)
                     ser.write(onForm2.encode())
-                    time.sleep(1)
+                    #time.sleep(2)
                     #ser.flushInput()
                     print('serial write on')
             
@@ -531,8 +533,8 @@ def stream_handler(message):
                 ser.write(onForm3.encode())
                 print('serial write on')
 
-if uid != "":
-    my_stream = db.child(uid).stream(stream_handler)
+# if uid != "":
+#     my_stream = db.child(uid).stream(stream_handler)
 
 connected = False
 def handle_data(data):
@@ -563,6 +565,8 @@ if __name__ == '__main__':
                     # now we have a fresh token
                 uid = user['userId']
                 print(user['userId'])
+                if uid != "":
+                    my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
                 myappDash.show()
                 
