@@ -11,6 +11,8 @@ import cv2
 import hashlib
 from pyfingerprint.pyfingerprint import PyFingerprint
 import numpy as np
+import hashlib
+
 
 import math
 from sklearn import neighbors
@@ -28,12 +30,12 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-USB_FINGER_PORT = '/dev/ttyUSB1'
-#USB_FINGER_PORT = '/dev/tty.usbserial'
+#USB_FINGER_PORT = '/dev/ttyUSB1'
+USB_FINGER_PORT = '/dev/tty.usbserial'
 authEmail = ""
 authPass = ""
-#port = '/dev/tty.usbserial-1410'
-port = '/dev/ttyUSB0'
+port = '/dev/tty.usbserial-1410'
+#port = '/dev/ttyUSB0'
 baud = 115200
 ser = serial.Serial(port, baud)
 config = {
@@ -277,8 +279,10 @@ class MyAppSignIn(QMainWindow):
             self.ui.label_2.setText("Step 3: Put your finger on the sensor again.")
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
-            myappDash = MyApp()
-            myappDash.show()
+            app = PasswordSettingApp()
+            app.show()
+            # myappDash = MyApp()
+            # myappDash.show()
             self.close()
         elif x==5:
             self.ui.label_2.setText("Error finger doesn't match , Please start again.")
@@ -685,22 +689,37 @@ class MyApp(QMainWindow):
         global bleAuth
         global fingerAuth
         global passcodes
+        with open('pass.json') as json_file:
+            json_pass = json.load(json_file)
         if(len(passcodes) >= 4):
-            if(passcodes == '1234'):
+            hash_object = hashlib.sha256(passcodes.encode())
+            hex_dig = hash_object.hexdigest()
+            if(hex_dig == json_pass["pass"]):
                 self.ui.password_field.setStyleSheet('color: green')
                 print('Correct')
                 #self.hide()
                 passAuth = True
                 if True:#faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                         faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
+                        passcodes = ""
+                        self.ui.password_field.setStyleSheet('color: white')
+                        self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
                         homeapp.show()
+                        
                 else:
                         QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
             else:
-                self.ui.password_field.setStyleSheet('color: black')
+                self.ui.password_field.setStyleSheet('color: white')
                 print('Wrong')
                 passcodes = ''
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+                msg.setText("Password incorrect!!")
+                #msg.setInformativeText("You are ready to go.")
+                msg.setWindowTitle("Success.")
+                msg.setStandardButtons(QMessageBox.Ok)
+                retval = msg.exec_()
                 self.printPasscode() 
     def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree', verbose=False):
             X = []
@@ -741,7 +760,81 @@ class MyApp(QMainWindow):
                     pickle.dump(knn_clf, f)
 
             return knn_clf
- 
+
+class PasswordSettingApp(QMainWindow):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        font = QFont()
+        font.setPointSize(16) 
+        self.passCode = ""
+        self.passDict = {}
+        self.firstPass = ""
+        self.secondPass = ""
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+        ### hide not use ###
+        self.ui.btn_finger.hide()
+        self.ui.btn_photo.hide()
+        self.ui.label_beacon.hide()
+        self.ui.label_2.hide()
+        self.ui.label_3.setFont(font)
+        self.ui.label_3.setStyleSheet("color:#FFFFFF;")
+        self.ui.label_3.setText("Type your 4 digit password.")
+
+
+    def enterCode(self, n) :
+        #print("password entered : {}".format(n))
+        self.passCode += n
+        lenn = len(self.passCode)
+        if lenn >=4:
+            
+            if len(self.firstPass) <=0:
+                self.firstPass = self.passCode 
+                self.passCode = ""
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+
+                msg.setText("Re type your 4 digit password.")
+                #msg.setInformativeText("")
+                msg.setWindowTitle("Success.")
+                msg.setStandardButtons(QMessageBox.Ok)
+                retval = msg.exec_()
+                self.ui.label_3.setText("Type your 4 digit password again.")
+                self.ui.password_field.setText('')
+                self.ui.password_field.repaint()
+            else:
+                if self.passCode == self.firstPass:
+                    self.ui.password_field.setText('')
+                    self.ui.password_field.repaint()
+                    hash_object = hashlib.sha256(self.passCode.encode())
+                    hex_dig = hash_object.hexdigest()
+                    self.passDict["pass"] = hex_dig
+                    # pass_json = json.dumps(self.passDict)
+                    with open('pass.json', 'w') as outfile:  
+                        json.dump(self.passDict, outfile)
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setText("Password saved.")
+                    msg.setInformativeText("You are ready to go.")
+                    msg.setWindowTitle("Success.")
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    retval = msg.exec_()
+                    myappDash = MyApp()
+                    myappDash.show()
+                    self.close()
+
+
+        else:
+            self.ui.password_field.setText(self.passCode)
+            self.ui.password_field.repaint()
+    def enterDelete(self) :
+        print("password entered : DEL")
+    def fingerScan(self):
+        print("dummy!")
+    def takePhoto(self):
+        print("dummy2")
+    
+
 def stream_handler(message):
     global buttonDict
     if type(message["data"]) is dict:
