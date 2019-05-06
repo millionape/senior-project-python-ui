@@ -30,7 +30,7 @@ import serial
 import threading
 import time
 
-#from pyzbar import pyzbar
+from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
 USB_FINGER_PORT = '/dev/ttyUSB1'
 #USB_FINGER_PORT = '/dev/tty.usbserial'

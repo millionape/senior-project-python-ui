@@ -18,7 +18,7 @@ class Ui_Dialog(object):
         self.x = 200
         self.offset = self.x-50
         font = QtGui.QFont()
-        font.setPointSize(16) 
+        font.setPointSize(13) 
 
         self.btn_finger = QtWidgets.QPushButton(Dialog)
         self.btn_finger.setFont(font)
@@ -131,7 +131,7 @@ class Ui_Dialog(object):
         #####
         self.label_3 = QtWidgets.QLabel(Dialog)
         self.label_3.setGeometry(QtCore.QRect(40, 5, 256, 256))
-        font.setPointSize(18)
+        font.setPointSize(14)
         self.label_3.setFont(font)
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
