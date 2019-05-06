@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import sys
+import blescan3
+import bluetooth._bluetooth as bluez
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow ,QMessageBox
 from functools import partial
 from PyQt5.QtGui import QPixmap, QImage  ,QFont                              
@@ -22,20 +24,20 @@ import pickle
 from PIL import Image, ImageDraw
 import face_recognition
 from face_recognition.face_recognition_cli import image_files_in_folder
-import pyrebase
+from pyrebase import pyrebase
 import json
 import serial
 import threading
 import time
 
-from pyzbar import pyzbar
+#from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-#USB_FINGER_PORT = '/dev/ttyUSB1'
-USB_FINGER_PORT = '/dev/tty.usbserial'
+USB_FINGER_PORT = '/dev/ttyUSB1'
+#USB_FINGER_PORT = '/dev/tty.usbserial'
 authEmail = ""
 authPass = ""
-port = '/dev/tty.usbserial-1410'
-#port = '/dev/ttyUSB0'
+#port = '/dev/tty.usbserial-1410'
+port = '/dev/ttyUSB0'
 baud = 115200
 ser = serial.Serial(port, baud)
 config = {
@@ -503,6 +505,60 @@ class ThreadFingerCompare(QThread):
     def stop(self):
         self.terminate()
         #self.stop()
+class ThreadBLE(QThread):
+    state = pyqtSignal(int)
+    flag = True
+    count = 0
+    avg = 0
+    try:
+        sock = bluez.hci_open_dev(0)
+        print("ble thread started")
+
+    except:
+        print("error accessing bluetooth device...")
+        sys.exit(1)
+    startTime = time.time()
+    currentTime = time.time()
+    def run(self):
+        self.startTime = time.time()
+        while self.flag:
+            self.currentTime = time.time()
+            pote_phone =  "7FA08BC7A55F45FC85C00BF26F899530"
+            pote_beacon = pote_phone.lower()
+            returnedList = blescan3.parse_events(self.sock, 1)
+            if (self.currentTime-self.startTime)>=7 :
+                self.state.emit(-1)
+                self.startTime = self.currentTime
+                #print("5s interval")
+            else:
+                #returnedList = blescan3.parse_events(self.sock, 1)
+                #print("----------")
+                for beacon in returnedList:
+                    if(pote_beacon in beacon):
+                        arr = beacon.split(",")
+                        txPower = float(arr[1])
+                        rssi = float(arr[2])
+                        distance = 10**((txPower-rssi)/(10.0*2.0))
+                        self.avg += distance
+                        beacon += ","
+                        beacon += str(distance)
+                        #print(beacon)
+                        self.count += 1
+                        if(self.count >= 10):
+                            self.startTime = time.time()
+                            self.state.emit(self.avg/10.0)
+                            #print(pote_beacon)
+                            #print("Average = " + str(self.avg/10.0))
+                            self.count = 0
+                            self.avg = 0
+    def __del__(self):
+        self.flag = False
+        self.quit()
+        self.wait()
+    def stop(self):
+        self.flag = False
+        self.terminate()
+        #self.stop()
 class MyApp(QMainWindow):
     img1 = None
     @pyqtSlot(QImage)
@@ -521,7 +577,24 @@ class MyApp(QMainWindow):
         self.thFingerCompare = ThreadFingerCompare(self)
         #self.thFingerCompare.setTerminationEnabled(True)
         self.thFingerCompare.state.connect(self.waitToScan)
-
+        self.bleThread = ThreadBLE(self)
+        self.bleThread.state.connect(self.bleCallback)
+        self.bleThread.start()
+        with open('bleAuth.json') as json_file:
+            try:
+                data = json.load(json_file)
+                print("ble auth file OK")
+                print(data['bleID'])
+            except:
+                print("ble auth file invalid")
+            
+    def bleCallback(self,x):
+        if x == -1:
+            print('BLE timeout')
+            self.ui.label_beacon.setText("Beacon scanning..")
+        else:
+            print("BLE detected id is+{}".format(x))
+            self.ui.label_beacon.setText("Beacon Detected")
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Escape:

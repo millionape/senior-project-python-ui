@@ -35,7 +35,7 @@ class Ui_Dialog(object):
 
         self.label_beacon = QtWidgets.QLabel(Dialog)
         self.label_beacon.setGeometry(QtCore.QRect(80, 390, 200, 30))
-        font.setPointSize(18)
+        font.setPointSize(15)
         self.label_beacon.setFont(font)
         self.label_beacon.setStyleSheet('color:#FFFFFF;') 
         self.label_beacon.setAlignment(QtCore.Qt.AlignCenter)
