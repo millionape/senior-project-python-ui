@@ -282,7 +282,7 @@ class MyAppSignIn(QMainWindow):
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
             app = PasswordSettingApp()
-            app.show()
+            app.showFullScreen() 
             # myappDash = MyApp()
             # myappDash.show()
             self.close()
@@ -310,7 +310,7 @@ class MyAppSignIn(QMainWindow):
             self.ui.label_3.setText("")
             self.ui.label_2.setText("Tap on start button for enroll your new finger.")
             self.ui.pushButton.hide()
-            self.ui.pushButton2.show()
+            self.ui.pushButton2.showFullScreen() 
             # myappDash = MyApp()
             # myappDash.show()
             # self.close()
@@ -340,7 +340,7 @@ class MyAppSignIn(QMainWindow):
             #msg.buttonClicked.connect(self.msgbtn)
             retval = msg.exec_()
             if retval == QMessageBox.Ok:
-                self.ui.pushButton.show()
+                self.ui.pushButton.showFullScreen()
                 self.ui.label_3.setText("Please tap on \"TakePhotos\" button down below.")
                 self.thf.start()
             
@@ -401,8 +401,9 @@ class HomeApp(QMainWindow):
         QWidget.__init__(self, parent)
         self.ui = HomeScreen()
         self.ui.setupHomeScreen(self)
+        self.ui.btn_0.clicked.connect(self.toHome)
         font = QFont()
-        font.setPointSize(18) 
+        font.setPointSize(15) 
         all_users = db.child(uid).get()
         if all_users != None:
             with open('nodeInfo.json', 'w') as outfile:  
@@ -428,7 +429,8 @@ class HomeApp(QMainWindow):
             self.ui.gridLayout.addWidget(self.ui.pushButton)
             self.ui.pushButton.clicked.connect(partial(self.buttonPress, user.key() , self.ui.pushButton))
         print(buttonDict)
-
+    def toHome(self):
+        self.close()
     def buttonPress(self,x,buttonObject):
         #buttonObject.setText("hello")
         global ser
@@ -589,10 +591,13 @@ class MyApp(QMainWindow):
                 print("ble auth file invalid")
             
     def bleCallback(self,x):
+        global bleAuth
         if x == -1:
+            bleAuth = False
             print('BLE timeout')
             self.ui.label_beacon.setText("Beacon scanning..")
         else:
+            bleAuth = True
             print("BLE detected id is+{}".format(x))
             self.ui.label_beacon.setText("Beacon Detected")
     def keyPressEvent(self, event):
@@ -604,7 +609,7 @@ class MyApp(QMainWindow):
         if x == 1:
             #self.thFingerCompare.stop()
             homeapp = HomeApp(self)
-            homeapp.show()
+            homeapp.showFullScreen()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
@@ -683,7 +688,7 @@ class MyApp(QMainWindow):
                                     if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                                             faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                                             homeapp = HomeApp(self)
-                                            homeapp.show()
+                                            homeapp.showFullScreen()
                                     else:
                                             QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
                             else:
@@ -772,20 +777,23 @@ class MyApp(QMainWindow):
                 print('Correct')
                 #self.hide()
                 passAuth = True
-                if True:#faceAuth+passAuth+bleAuth+fingerAuth >= 2:
+                if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                         faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                         passcodes = ""
                         self.ui.password_field.setStyleSheet('color: white')
                         self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
-                        homeapp.show()
+                        homeapp.showFullScreen()
                         
                 else:
-                        QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
+                    passcodes = ""
+                    #self.ui.password_field.setText("")
+                    QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
             else:
                 self.ui.password_field.setStyleSheet('color: white')
                 print('Wrong')
                 passcodes = ''
+                #self.ui.password_field.setText("")
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Information)
                 msg.setText("Password incorrect!!")
@@ -893,7 +901,7 @@ class PasswordSettingApp(QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok)
                     retval = msg.exec_()
                     myappDash = MyApp()
-                    myappDash.show()
+                    myappDash.showFullScreen()
                     self.close()
 
 
@@ -1005,13 +1013,13 @@ if __name__ == '__main__':
                 if uid != "":
                     my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
-                myappDash.show()
+                myappDash.showFullScreen()
                 
             except:
                 print('some error')
         except:
             myapp = MyAppSignIn()
-            myapp.show()
+            myapp.showFullScreen()
     
     # myapp = MyApp()
     # myapp.show()

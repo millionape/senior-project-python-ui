@@ -21,6 +21,15 @@ class HomeScreen(object):
         self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.gridLayout.setObjectName("gridLayout")
+        
+        font = QtGui.QFont()
+        font.setPointSize(16) 
+        
+        self.btn_0 = QtWidgets.QPushButton(Dialog)
+        self.btn_0.setFont(font)
+        self.btn_0.setStyleSheet('color:#000000;') 
+        self.btn_0.setGeometry(QtCore.QRect(550, 20, 130, 100))
+        self.btn_0.setObjectName("btn_0")
         ####
         # self.pushButton_2 = QtWidgets.QPushButton(self.gridLayoutWidget)
         # self.pushButton_2.setObjectName("pushButton_2")
@@ -45,7 +54,7 @@ class HomeScreen(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        # self.pushButton_2.setText(_translate("Dialog", "PushButton"))
+        self.btn_0.setText(_translate("Dialog", "Exit"))
         # self.pushButton.setText(_translate("Dialog", "PushButton"))
         # self.pushButton_3.setText(_translate("Dialog", "PushButton"))
         #self.pushButton_4.setText(_translate("Dialog", "PushButton"))
