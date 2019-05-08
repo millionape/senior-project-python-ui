@@ -142,6 +142,7 @@ class ThreadFace(QThread):
                     cv2.putText(rgbImage,"Taking Photos :{}".format(self.count), (0,120), cv2.FONT_HERSHEY_SIMPLEX,3, (0, 0, 255), 2) 
                     cv2.imwrite('facesImage/0{}.png'.format(self.count),rgbImage)
                 if self.count >= 30:
+                    self.flag = False
                     self.stateFace.emit(1)
                     self.cap.release() 
                     self.quit()
@@ -159,6 +160,7 @@ class ThreadFace(QThread):
     def stop(self):
         self.flag = False
         self.cap.release()
+        self.quit()
 class ThreadFinger(QThread):
     changePixmap = pyqtSignal(QImage)
     stateFinger = pyqtSignal(int)
@@ -661,8 +663,8 @@ class MyApp(QMainWindow):
         
     def closeCam(self):
         print("terminating.....")
-        if self.th.isRunning():
-            self.th.stop()
+        #if self.th.isRunning():
+        self.th.stop()
         #self.th.terminate()
     def predict(self,img, knn_clf=None, model_path=None, distance_threshold=0.4):
             # if not os.path.isfile(X_img_path) or os.path.splitext(X_img_path)[1][1:] not in ALLOWED_EXTENSIONS:
