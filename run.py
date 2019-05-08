@@ -283,7 +283,7 @@ class MyAppSignIn(QMainWindow):
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
             app = PasswordSettingApp()
-            app.showFullScreen() 
+            app.show() 
             # myappDash = MyApp()
             # myappDash.show()
             self.close()
@@ -311,7 +311,7 @@ class MyAppSignIn(QMainWindow):
             self.ui.label_3.setText("")
             self.ui.label_2.setText("Tap on start button for enroll your new finger.")
             self.ui.pushButton.hide()
-            self.ui.pushButton2.showFullScreen() 
+            self.ui.pushButton2.show() 
             # myappDash = MyApp()
             # myappDash.show()
             # self.close()
@@ -341,7 +341,7 @@ class MyAppSignIn(QMainWindow):
             #msg.buttonClicked.connect(self.msgbtn)
             retval = msg.exec_()
             if retval == QMessageBox.Ok:
-                self.ui.pushButton.showFullScreen()
+                self.ui.pushButton.show()
                 self.ui.label_3.setText("Please tap on \"TakePhotos\" button down below.")
                 self.thf.start()
             
@@ -633,7 +633,7 @@ class MyApp(QMainWindow):
         if x == 1:
             #self.thFingerCompare.stop()
             homeapp = HomeApp(self)
-            homeapp.showFullScreen()
+            homeapp.show()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
@@ -721,7 +721,7 @@ class MyApp(QMainWindow):
                                     if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                                             faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                                             homeapp = HomeApp(self)
-                                            homeapp.showFullScreen()
+                                            homeapp.show()
                                     else:
                                             QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
                             else:
@@ -816,7 +816,7 @@ class MyApp(QMainWindow):
                         self.ui.password_field.setStyleSheet('color: white')
                         self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
-                        homeapp.showFullScreen()
+                        homeapp.show()
                         
                 else:
                     passcodes = ""
@@ -934,7 +934,7 @@ class PasswordSettingApp(QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok)
                     retval = msg.exec_()
                     myappDash = MyApp()
-                    myappDash.showFullScreen()
+                    myappDash.show()
                     self.close()
 
 
@@ -1092,13 +1092,13 @@ if __name__ == '__main__':
                 if uid != "":
                     my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
-                myappDash.showFullScreen()
+                myappDash.show()
                 
             except:
                 print('some error')
         except:
             myapp = MyAppSignIn()
-            myapp.showFullScreen()
+            myapp.show()
     
     # myapp = MyApp()
     # myapp.show()
