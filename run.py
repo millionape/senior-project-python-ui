@@ -539,6 +539,8 @@ class ThreadBLE(QThread):
     except:
         print("error accessing bluetooth device...")
         self.state.emit(-2)
+    blescan3.hci_le_set_scan_parameters(sock)
+    blescan3.hci_enable_le_scan(sock)
     startTime = time.time()
     currentTime = time.time()
     def run(self):
@@ -547,7 +549,7 @@ class ThreadBLE(QThread):
             self.currentTime = time.time()
             pote_phone =  "7FA08BC7A55F45FC85C00BF26F899530"
             pote_beacon = pote_phone.lower()
-            returnedList = blescan3.parse_events(self.sock, 1)
+            returnedList = blescan3.parse_events(self.sock, 10)
             if (self.currentTime-self.startTime)>=5:
                 self.state.emit(-1)
                 self.startTime = self.currentTime
@@ -556,7 +558,7 @@ class ThreadBLE(QThread):
                 #returnedList = blescan3.parse_events(self.sock, 1)
                 #print("----------")
                 for beacon in returnedList:
-                    print("found pote beacon in thread")
+                    #print("found pote beacon in thread")
                     if(pote_beacon in beacon):
                         arr = beacon.split(",")
                         txPower = float(arr[1])
