@@ -15,7 +15,6 @@ from pyfingerprint.pyfingerprint import PyFingerprint
 import numpy as np
 import hashlib
 
-
 import math
 from sklearn import neighbors
 import os
@@ -32,12 +31,12 @@ import time
 
 from pyzbar import pyzbar
 from signinscreen import Ui_SignIn
-USB_FINGER_PORT = '/dev/ttyUSB1'
+USB_FINGER_PORT = '/dev/ttyUSB0'
 #USB_FINGER_PORT = '/dev/tty.usbserial'
 authEmail = ""
 authPass = ""
 #port = '/dev/tty.usbserial-1410'
-port = '/dev/ttyUSB0'
+port = '/dev/ttyUSB1'
 baud = 115200
 ser = serial.Serial(port, baud)
 config = {
@@ -438,11 +437,21 @@ class HomeApp(QMainWindow):
         onForm = "!ON,{}\r".format(x)
         now_state = db.child(uid).child(x).child('status').get()
         if now_state.val() == "0":
-            ser.write(onForm.encode())
+            try:
+                while ser.inWaiting()>0:
+                    print("waiting for serial")
+                ser.write(onForm.encode())
+            except:
+                print("error to write command")
             buttonObject.setStyleSheet('background-color:#20BF55;color:#000000;') 
             db.child(uid).child(x).update({"status":"1"})
         else:
-            ser.write(offForm.encode())
+            try:
+                while ser.inWaiting()>0:
+                    print("waiting for serial")
+                ser.write(offForm.encode())
+            except:
+                print("error to write command")
             buttonObject.setStyleSheet('background-color:#002330;color:#FFFFFF;')
             db.child(uid).child(x).update({"status":"0"})
             
@@ -464,7 +473,7 @@ class ThreadFingerCompare(QThread):
         except Exception as e:
             print('The fingerprint sensor could not be initialized!')
             print('Exception message: ' + str(e))
-            exit(1)
+            self.state.emit(-1)
         print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
         try:
             print('Waiting for finger...')
@@ -619,6 +628,15 @@ class MyApp(QMainWindow):
             msg.setWindowTitle("Error.")
             msg.setStandardButtons(QMessageBox.Ok)
             retval = msg.exec_()
+        elif x == -1:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("The fingerprint sensor could not be initialized!")
+            msg.setInformativeText("please try again.")
+            msg.setWindowTitle("Error.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            retval = msg.exec_()
+
             
     def fingerScan(self,x):
         print("finger scan button clicked!")
@@ -936,13 +954,20 @@ def stream_handler(message):
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#002330;color:#FFFFFF;')
                 #time.sleep(2.5)
-                
-                ser.write(offForm.encode())
+                try:
+                    while ser.inWaiting()>0:
+                        print("waiting for serial")
+                    ser.write(offForm.encode())
+                except:
+                    print("error to write command")
                 print('serial write off')
             else:
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#20BF55;color:#000000;') 
-                ser.write(onForm.encode())
+                try:
+                    ser.write(onForm.encode())
+                except:
+                    print("error to write command")
                 #time.sleep(2.5)
                 print('serial write on')
         else:
@@ -952,14 +977,25 @@ def stream_handler(message):
                 if y["status"] == "0":
                     #time.sleep(2.5)
                     offForm2 = "!OFF,{}".format(x)
-                    ser.write(offForm2.encode())
+                    try:
+                        while ser.inWaiting()>0:
+                            print("waiting for serial")
+                        ser.write(offForm2.encode())
+                    except:
+                        print("error to write command")
                     #time.sleep(2)
                     #ser.flushInput()
                     print('serial write off')
                 else:
                     #time.sleep(2.5)
                     onForm2 = "!ON,{}".format(x)
-                    ser.write(onForm2.encode())
+                    try:
+                        while ser.inWaiting()>0:
+                            print("waiting for serial")
+                        ser.write(onForm2.encode())
+                    except:
+                        print("error to write command")
+
                     #time.sleep(2)
                     #ser.flushInput()
                     print('serial write on')
@@ -970,12 +1006,22 @@ def stream_handler(message):
             if message["data"] == "0":
                 offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
                 #time.sleep(2)
-                ser.write(offForm3.encode())
+                try:
+                    while ser.inWaiting()>0:
+                        print("waiting for serial")
+                    ser.write(offForm3.encode())
+                except:
+                    print("error to write command")
                 print('serial write off')
             else:
                 onForm3 = "!ON,{}".format(message["path"].split("/")[1])
                 #time.sleep(2)
-                ser.write(onForm3.encode())
+                try:
+                    while ser.inWaiting()>0:
+                        print("waiting for serial")
+                    ser.write(onForm3.encode())
+                except:
+                    print("error to write command ")
                 print('serial write on')
 
 # if uid != "":
