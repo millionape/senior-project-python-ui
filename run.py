@@ -395,6 +395,7 @@ class Thread(QThread):
             #self.quit()
             self.cap.release()
             self.state.emit()
+            self.stop()
             #self.quit()
             #self.terminate()
 class HomeApp(QMainWindow):
