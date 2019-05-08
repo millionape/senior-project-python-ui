@@ -441,6 +441,7 @@ class HomeApp(QMainWindow):
         offForm = "!OFF,{}\r".format(x)
         onForm = "!ON,{}\r".format(x)
         now_state = db.child(uid).child(x).child('status').get()
+        ser.flush()
         if now_state.val() == "0":
             try:
                 serRead = False
@@ -1062,8 +1063,9 @@ def read_from_port(ser):
     global serRead 
     while True:
         if serRead:
-            reading = ser.readline().decode()
-            print("from ESP :{}".format(reading))
+            if ser.out_waiting() <= 0:
+                reading = ser.readline().decode()
+                print("from ESP :{}".format(reading))
         else:
             print("serial now pause...")
 
