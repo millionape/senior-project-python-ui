@@ -283,7 +283,7 @@ class MyAppSignIn(QMainWindow):
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
             app = PasswordSettingApp()
-            app.show() 
+            app.showFullScreen() 
             # myappDash = MyApp()
             # myappDash.show()
             self.close()
@@ -311,7 +311,7 @@ class MyAppSignIn(QMainWindow):
             self.ui.label_3.setText("")
             self.ui.label_2.setText("Tap on start button for enroll your new finger.")
             self.ui.pushButton.hide()
-            self.ui.pushButton2.show() 
+            self.ui.pushButton2.showFullScreen() 
             # myappDash = MyApp()
             # myappDash.show()
             # self.close()
@@ -341,7 +341,7 @@ class MyAppSignIn(QMainWindow):
             #msg.buttonClicked.connect(self.msgbtn)
             retval = msg.exec_()
             if retval == QMessageBox.Ok:
-                self.ui.pushButton.show()
+                self.ui.pushButton.showFullScreen()
                 self.ui.label_3.setText("Please tap on \"TakePhotos\" button down below.")
                 self.thf.start()
             
@@ -441,7 +441,6 @@ class HomeApp(QMainWindow):
         offForm = "!OFF,{}\r".format(x)
         onForm = "!ON,{}\r".format(x)
         now_state = db.child(uid).child(x).child('status').get()
-        ser.flush()
         if now_state.val() == "0":
             try:
                 serRead = False
@@ -634,7 +633,7 @@ class MyApp(QMainWindow):
         if x == 1:
             #self.thFingerCompare.stop()
             homeapp = HomeApp(self)
-            homeapp.show()
+            homeapp.showFullScreen()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
@@ -722,7 +721,7 @@ class MyApp(QMainWindow):
                                     if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                                             faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                                             homeapp = HomeApp(self)
-                                            homeapp.show()
+                                            homeapp.showFullScreen()
                                     else:
                                             QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
                             else:
@@ -817,7 +816,7 @@ class MyApp(QMainWindow):
                         self.ui.password_field.setStyleSheet('color: white')
                         self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
-                        homeapp.show()
+                        homeapp.showFullScreen()
                         
                 else:
                     passcodes = ""
@@ -935,7 +934,7 @@ class PasswordSettingApp(QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok)
                     retval = msg.exec_()
                     myappDash = MyApp()
-                    myappDash.show()
+                    myappDash.showFullScreen()
                     self.close()
 
 
@@ -1063,9 +1062,8 @@ def read_from_port(ser):
     global serRead 
     while True:
         if serRead:
-            if ser.out_waiting() <= 0:
-                reading = ser.readline().decode()
-                print("from ESP :{}".format(reading))
+            reading = ser.readline().decode()
+            print("from ESP :{}".format(reading))
         else:
             print("serial now pause...")
 
@@ -1094,13 +1092,13 @@ if __name__ == '__main__':
                 if uid != "":
                     my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
-                myappDash.show()
+                myappDash.showFullScreen()
                 
             except:
                 print('some error')
         except:
             myapp = MyAppSignIn()
-            myapp.show()
+            myapp.showFullScreen()
     
     # myapp = MyApp()
     # myapp.show()
