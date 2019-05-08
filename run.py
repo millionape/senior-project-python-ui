@@ -58,6 +58,7 @@ fingerAuth = False
 bleAuth = False
 ### this is gun comment ###
 passcodes = ''
+serRead = True
 class ThreadQR(QThread):
     changePixmap = pyqtSignal(QImage)
     state = pyqtSignal(int)
@@ -398,10 +399,12 @@ class HomeApp(QMainWindow):
     def __init__(self, parent=None):
         global uid
         global buttonDict
+        
         QWidget.__init__(self, parent)
         self.ui = HomeScreen()
         self.ui.setupHomeScreen(self)
         self.ui.btn_0.clicked.connect(self.toHome)
+        
         font = QFont()
         font.setPointSize(15) 
         all_users = db.child(uid).get()
@@ -433,24 +436,29 @@ class HomeApp(QMainWindow):
         self.close()
     def buttonPress(self,x,buttonObject):
         #buttonObject.setText("hello")
+        global serRead
         global ser
         offForm = "!OFF,{}\r".format(x)
         onForm = "!ON,{}\r".format(x)
         now_state = db.child(uid).child(x).child('status').get()
         if now_state.val() == "0":
             try:
+                serRead = False
                 while ser.inWaiting()>0:
                     print("waiting for serial")
                 ser.write(onForm.encode())
+                serRead = True
             except:
                 print("error to write command")
             buttonObject.setStyleSheet('background-color:#20BF55;color:#000000;') 
             db.child(uid).child(x).update({"status":"1"})
         else:
             try:
+                serRead = False
                 while ser.inWaiting()>0:
                     print("waiting for serial")
                 ser.write(offForm.encode())
+                serRead = True
             except:
                 print("error to write command")
             buttonObject.setStyleSheet('background-color:#002330;color:#FFFFFF;')
@@ -475,8 +483,9 @@ class ThreadFingerCompare(QThread):
             print('The fingerprint sensor could not be initialized!')
             print('Exception message: ' + str(e))
             self.state.emit(-1)
-        print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
         try:
+            print('Currently used templates: ' + str(f.getTemplateCount()) +'/'+ str(f.getStorageCapacity()))
+        
             print('Waiting for finger...')
             while ( f.readImage() == False):
                 time.sleep(0.3)
@@ -509,6 +518,7 @@ class ThreadFingerCompare(QThread):
         except Exception as e:
             print('Operation failed!')
             print('Exception message: ' + str(e))
+            self.state.emit(-1)
             #exit(1)
     def __del__(self):
         self.flag = False
@@ -528,7 +538,7 @@ class ThreadBLE(QThread):
 
     except:
         print("error accessing bluetooth device...")
-        sys.exit(1)
+        self.state.emit(-2)
     startTime = time.time()
     currentTime = time.time()
     def run(self):
@@ -593,6 +603,7 @@ class MyApp(QMainWindow):
         self.bleThread = ThreadBLE(self)
         self.bleThread.state.connect(self.bleCallback)
         self.bleThread.start()
+        
         with open('bleAuth.json') as json_file:
             try:
                 data = json.load(json_file)
@@ -607,6 +618,8 @@ class MyApp(QMainWindow):
             bleAuth = False
             print('BLE timeout')
             self.ui.label_beacon.setText("Beacon scanning..")
+        elif x == -2:
+            self.ui.label_beacon.setText("Beacon Error.")
         else:
             bleAuth = True
             print("BLE detected id is+{}".format(x))
@@ -938,6 +951,7 @@ class PasswordSettingApp(QMainWindow):
 
 def stream_handler(message):
     global buttonDict
+    global serRead
     if type(message["data"]) is dict:
         # print("first run value")
         # print(message["data"])
@@ -957,9 +971,11 @@ def stream_handler(message):
                     buttonStrem.setStyleSheet('background-color:#002330;color:#FFFFFF;')
                 #time.sleep(2.5)
                 try:
+                    serRead = False
                     while ser.inWaiting()>0:
                         print("waiting for serial")
                     ser.write(offForm.encode())
+                    serRead = True
                 except:
                     print("error to write command")
                 print('serial write off')
@@ -967,7 +983,9 @@ def stream_handler(message):
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#20BF55;color:#000000;') 
                 try:
+                    serRead = False
                     ser.write(onForm.encode())
+                    serRead = True
                 except:
                     print("error to write command")
                 #time.sleep(2.5)
@@ -980,9 +998,11 @@ def stream_handler(message):
                     #time.sleep(2.5)
                     offForm2 = "!OFF,{}".format(x)
                     try:
+                        serRead = False
                         while ser.inWaiting()>0:
                             print("waiting for serial")
                         ser.write(offForm2.encode())
+                        serRead = True
                     except:
                         print("error to write command")
                     #time.sleep(2)
@@ -992,9 +1012,11 @@ def stream_handler(message):
                     #time.sleep(2.5)
                     onForm2 = "!ON,{}".format(x)
                     try:
+                        serRead = False
                         while ser.inWaiting()>0:
                             print("waiting for serial")
                         ser.write(onForm2.encode())
+                        serRead = True
                     except:
                         print("error to write command")
 
@@ -1009,9 +1031,11 @@ def stream_handler(message):
                 offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
                 #time.sleep(2)
                 try:
+                    serRead = False
                     while ser.inWaiting()>0:
                         print("waiting for serial")
                     ser.write(offForm3.encode())
+                    serRead = True
                 except:
                     print("error to write command")
                 print('serial write off')
@@ -1019,9 +1043,11 @@ def stream_handler(message):
                 onForm3 = "!ON,{}".format(message["path"].split("/")[1])
                 #time.sleep(2)
                 try:
+                    serRead = False
                     while ser.inWaiting()>0:
                         print("waiting for serial")
                     ser.write(onForm3.encode())
+                    serRead = True
                 except:
                     print("error to write command ")
                 print('serial write on')
@@ -1033,14 +1059,19 @@ connected = False
 def handle_data(data):
     print(data)
 def read_from_port(ser):
-        while True:
+    global serRead 
+    while True:
+        if serRead:
             reading = ser.readline().decode()
             print("from ESP :{}".format(reading))
+        else:
+            print("serial now pause...")
 
 thread = threading.Thread(target=read_from_port, args=(ser,))
 thread.start()
 
-                
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
