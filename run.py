@@ -143,6 +143,7 @@ class ThreadFace(QThread):
                 if self.count >= 30:
                     self.stateFace.emit(1)
                     self.cap.release() 
+                    self.quit()
                 convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
                 p = convertToQtFormat.scaled(350, 220)
                 self.imgSave = rgbImage
@@ -532,12 +533,12 @@ class ThreadBLE(QThread):
     currentTime = time.time()
     def run(self):
         self.startTime = time.time()
-        while self.flag:
+        while True:
             self.currentTime = time.time()
             pote_phone =  "7FA08BC7A55F45FC85C00BF26F899530"
             pote_beacon = pote_phone.lower()
             returnedList = blescan3.parse_events(self.sock, 1)
-            if (self.currentTime-self.startTime)>=7 :
+            if (self.currentTime-self.startTime)>=5:
                 self.state.emit(-1)
                 self.startTime = self.currentTime
                 #print("5s interval")
@@ -545,6 +546,7 @@ class ThreadBLE(QThread):
                 #returnedList = blescan3.parse_events(self.sock, 1)
                 #print("----------")
                 for beacon in returnedList:
+                    print("found pote beacon in thread")
                     if(pote_beacon in beacon):
                         arr = beacon.split(",")
                         txPower = float(arr[1])
@@ -555,9 +557,9 @@ class ThreadBLE(QThread):
                         beacon += str(distance)
                         #print(beacon)
                         self.count += 1
-                        if(self.count >= 10):
+                        if(self.count >= 5):
                             self.startTime = time.time()
-                            self.state.emit(self.avg/10.0)
+                            self.state.emit(self.avg/5.0)
                             #print(pote_beacon)
                             #print("Average = " + str(self.avg/10.0))
                             self.count = 0
