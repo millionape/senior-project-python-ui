@@ -138,11 +138,11 @@ class ThreadFace(QThread):
             ret, frame = self.cap.read()
             if ret:
                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                if self.takeFlag and self.count<30:
+                if self.takeFlag and self.count<=10:
                     self.count += 1
                     cv2.putText(rgbImage,"Taking Photos :{}".format(self.count), (0,120), cv2.FONT_HERSHEY_SIMPLEX,3, (0, 0, 255), 2) 
-                    cv2.imwrite('facesImage/user_1/0{}.png'.format(self.count),frame)
-                if self.count >= 30:
+                    cv2.imwrite('facesImage/USER_1/0{}.jpg'.format(self.count),frame)
+                if self.count >= 10:
                     self.flag = False
                     self.stateFace.emit(1)
                     self.cap.release() 
