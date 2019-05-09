@@ -645,8 +645,27 @@ class MyApp(QMainWindow):
     def waitToScan(self,x):
         if x == 1:
             #self.thFingerCompare.stop()
-            homeapp = HomeApp(self)
-            homeapp.showFullScreen()
+            # homeapp = HomeApp(self)
+            # homeapp.showFullScreen()
+
+            global faceAuth
+            global passAuth
+            global bleAuth
+            global fingerAuth
+            global passcodes
+            fingerAuth = True
+            if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
+                faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
+                homeapp = HomeApp(self)
+                homeapp.showFullScreen()
+            elif faceAuth+passAuth+bleAuth+fingerAuth < 2:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+                msg.setText("Please auth with one more method.")
+                #msg.setInformativeText("please try again.")
+                msg.setWindowTitle("Success.")
+                msg.setStandardButtons(QMessageBox.Ok)
+                retval = msg.exec_()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
