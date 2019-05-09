@@ -1181,7 +1181,7 @@ if __name__ == '__main__':
                 print('some error')
         except:
             myapp = MyAppSignIn()
-            myapp.showFullscreen()
+            myapp.showFullScreen()
     
     # myapp = MyApp()
     # myapp.show()
