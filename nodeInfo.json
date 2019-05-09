@@ -1,1 +1,1 @@
-{"2565829": {"type": "Light", "status": "0", "room": "Bath Room"}, "2565999": {"type": "Door", "status": "0", "room": "Dining Room"}, "6122912": {"type": "Fan", "status": "0", "room": "Bedroom"}}
+{"2565999": {"status": "0", "room": "Dining Room", "type": "Door"}, "2565829": {"status": "0", "room": "Bath Room", "type": "Light"}, "6122912": {"status": "0", "room": "Bedroom", "type": "Fan"}}

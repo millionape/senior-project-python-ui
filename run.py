@@ -141,15 +141,16 @@ class ThreadFace(QThread):
                 if self.takeFlag and self.count<30:
                     self.count += 1
                     cv2.putText(rgbImage,"Taking Photos :{}".format(self.count), (0,120), cv2.FONT_HERSHEY_SIMPLEX,3, (0, 0, 255), 2) 
-                    cv2.imwrite('facesImage/0{}.png'.format(self.count),frame)
+                    cv2.imwrite('facesImage/user_1/0{}.png'.format(self.count),frame)
                 if self.count >= 30:
                     self.flag = False
                     self.stateFace.emit(1)
                     self.cap.release() 
-                    
+                    #self.stateFace.emit(7)
                     print("Training KNN classifier...")
                     classifier = self.train("facesImage/", model_save_path="trained_knn_model.clf", n_neighbors=3)
                     print("Training complete!")
+                    self.stateFace.emit(8)
                     #self.flag = False
                     self.quit()
                 convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
@@ -345,21 +346,30 @@ class MyAppSignIn(QMainWindow):
             
 
     def faceCapture(self,x):
-        print("Face capture success")
-        self.thf.stop()
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText("Success")
-        msg.setInformativeText("Next please enroll your fingerprint.")
-        msg.setWindowTitle("Success.")
-        msg.setStandardButtons(QMessageBox.Ok)
-        retval = msg.exec_()
-        if retval == QMessageBox.Ok:
-            print("okkkk")
-            self.ui.label_3.setText("")
-            self.ui.label_2.setText("Tap on start button for enroll your new finger.")
-            self.ui.pushButton.hide()
-            self.ui.pushButton2.show() 
+        if x == 8:
+            print("Facetraining success")
+            self.thf.stop()
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("Success")
+            msg.setInformativeText("Next please enroll your fingerprint.")
+            msg.setWindowTitle("Success.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            retval = msg.exec_()
+            if retval == QMessageBox.Ok:
+                print("okkkk")
+                self.ui.label_3.setText("")
+                self.ui.label_2.setText("Tap on start button for enroll your new finger.")
+                self.ui.pushButton.hide()
+                self.ui.pushButton2.show()
+        elif x == 1:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("Triaing....")
+            msg.setInformativeText("Please wait a few min.")
+            msg.setWindowTitle("Triaing...")
+            msg.setStandardButtons(QMessageBox.Ok)
+            retval = msg.exec_()
             # myappDash = MyApp()
             # myappDash.show()
             # self.close()
