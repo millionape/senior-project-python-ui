@@ -749,7 +749,7 @@ class MyApp(QMainWindow):
                         self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
                 print("photo saved!")
     def takePhoto(self,event):
-        self.th.takePhoto()
+        self.th.take_photo()
         # flag = False
         # try:
         #     fh = open('trained_knn_model.clf', 'r')
