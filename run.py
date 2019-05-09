@@ -1049,7 +1049,7 @@ def stream_handler(message):
                 #time.sleep()
                 try:
                     serRead = False
-                    while ser.outWaiting()>0:
+                    while ser.inWaiting()>0:
                         print("waiting for serial")
                     ser.write(offForm3.encode())
                     serRead = True
@@ -1061,7 +1061,7 @@ def stream_handler(message):
                 time.sleep(0.6)
                 try:
                     serRead = False
-                    while ser.outWaiting()>0:
+                    while ser.inWaiting()>0:
                         print("waiting for serial")
                     ser.write(onForm3.encode())
                     serRead = True
