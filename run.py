@@ -39,6 +39,7 @@ authPass = ""
 port = '/dev/ttyUSB0'
 baud = 115200
 ser = serial.Serial(port, baud)
+delayTime = 0.6
 config = {
     "apiKey": "AIzaSyBL8AZt1Oq2B1EuDOQ-su43SobhObUFdBc",
     "authDomain": "final-project-80b54.firebaseapp.com",
@@ -285,7 +286,7 @@ class MyAppSignIn(QMainWindow):
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
             app = PasswordSettingApp()
-            app.showFullScreen() 
+            app.showFullscreen() 
             # myappDash = MyApp()
             # myappDash.show()
             self.close()
@@ -313,7 +314,7 @@ class MyAppSignIn(QMainWindow):
             self.ui.label_3.setText("")
             self.ui.label_2.setText("Tap on start button for enroll your new finger.")
             self.ui.pushButton.hide()
-            self.ui.pushButton2.showFullScreen() 
+            self.ui.pushButton2.show() 
             # myappDash = MyApp()
             # myappDash.show()
             # self.close()
@@ -343,7 +344,7 @@ class MyAppSignIn(QMainWindow):
             #msg.buttonClicked.connect(self.msgbtn)
             retval = msg.exec_()
             if retval == QMessageBox.Ok:
-                self.ui.pushButton.showFullScreen()
+                self.ui.pushButton.show()
                 self.ui.label_3.setText("Please tap on \"TakePhotos\" button down below.")
                 self.thf.start()
             
@@ -645,7 +646,7 @@ class MyApp(QMainWindow):
         if x == 1:
             #self.thFingerCompare.stop()
             homeapp = HomeApp(self)
-            homeapp.showFullScreen()
+            homeapp.showFullscreen()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
@@ -733,7 +734,7 @@ class MyApp(QMainWindow):
                                     if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                                             faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                                             homeapp = HomeApp(self)
-                                            homeapp.showFullScreen()
+                                            homeapp.showFullscreen()
                                     else:
                                             QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
                             else:
@@ -829,7 +830,7 @@ class MyApp(QMainWindow):
                         self.ui.password_field.setStyleSheet('color: white')
                         self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
-                        homeapp.showFullScreen()
+                        homeapp.showFullscreen()
                         
                 else:
                     passcodes = ""
@@ -947,7 +948,7 @@ class PasswordSettingApp(QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok)
                     retval = msg.exec_()
                     myappDash = MyApp()
-                    myappDash.showFullScreen()
+                    myappDash.showFullscreen()
                     self.close()
 
 
@@ -965,6 +966,7 @@ class PasswordSettingApp(QMainWindow):
 def stream_handler(message):
     global buttonDict
     global serRead
+    global delayTime
     if type(message["data"]) is dict:
         # print("first run value")
         # print(message["data"])
@@ -982,7 +984,7 @@ def stream_handler(message):
             if message["data"]["status"] == "0":
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#002330;color:#FFFFFF;')
-                time.sleep(0.6)
+                time.sleep(delayTime)
                 try:
                     serRead = False
                     while ser.inWaiting()>0:
@@ -991,11 +993,11 @@ def stream_handler(message):
                     serRead = True
                 except:
                     print("error to write command")
-                print('serial write off')
+                print('serial write off1')
             else:
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#20BF55;color:#000000;') 
-                time.sleep(0.6)
+                time.sleep(delayTime)
                 try:
                     serRead = False
                     while ser.inWaiting()>0:
@@ -1005,13 +1007,13 @@ def stream_handler(message):
                 except:
                     print("error to write command")
                 #time.sleep(2)
-                print('serial write on')
+                print('serial write on1')
         else:
             for x,y in message["data"].items():
                 print(x)
                 print(y["status"])
                 if y["status"] == "0":
-                    time.sleep(0.6)
+                    time.sleep(delayTime)
                     offForm2 = "!OFF,{}".format(x)
                     try:
                         serRead = False
@@ -1023,9 +1025,9 @@ def stream_handler(message):
                         print("error to write command")
                     #time.sleep(2)
                     #ser.flushInput()
-                    print('serial write off')
+                    print('serial write off1')
                 else:
-                    time.sleep(0.6)
+                    time.sleep(delayTime)
                     onForm2 = "!ON,{}".format(x)
                     try:
                         serRead = False
@@ -1038,14 +1040,14 @@ def stream_handler(message):
 
                     #time.sleep(2)
                     #ser.flushInput()
-                    print('serial write on')
+                    print('serial write on1')
             
     else:
         if message["path"].split("/")[2] == "status":
             print("updated node id is {} value is {}".format(message["path"].split("/")[1],message["data"]))
             if message["data"] == "0":
                 offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
-                time.sleep(0.6)
+                time.sleep(delayTime)
                 #time.sleep()
                 try:
                     serRead = False
@@ -1055,10 +1057,10 @@ def stream_handler(message):
                     serRead = True
                 except:
                     print("error to write command")
-                print('serial write off')
+                print('serial write off2')
             else:
                 onForm3 = "!ON,{}".format(message["path"].split("/")[1])
-                time.sleep(0.6)
+                time.sleep(delayTime)
                 try:
                     serRead = False
                     while ser.inWaiting()>0:
@@ -1067,7 +1069,7 @@ def stream_handler(message):
                     serRead = True
                 except:
                     print("error to write command ")
-                print('serial write on')
+                print('serial write on2')
 
 # if uid != "":
 #     my_stream = db.child(uid).stream(stream_handler)
@@ -1109,13 +1111,13 @@ if __name__ == '__main__':
                 if uid != "":
                     my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
-                myappDash.showFullScreen()
+                myappDash.showFullscreen()
                 
             except:
                 print('some error')
         except:
             myapp = MyAppSignIn()
-            myapp.showFullScreen()
+            myapp.showFullscreen()
     
     # myapp = MyApp()
     # myapp.show()
