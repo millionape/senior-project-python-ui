@@ -982,10 +982,10 @@ def stream_handler(message):
             if message["data"]["status"] == "0":
                 if buttonDict:
                     buttonStrem.setStyleSheet('background-color:#002330;color:#FFFFFF;')
-                time.sleep(2)
+                #time.sleep(2)
                 try:
                     serRead = False
-                    while ser.inWaiting()>0:
+                    while ser.outWaiting()>0:
                         print("waiting for serial")
                     ser.write(offForm.encode())
                     serRead = True
@@ -997,22 +997,24 @@ def stream_handler(message):
                     buttonStrem.setStyleSheet('background-color:#20BF55;color:#000000;') 
                 try:
                     serRead = False
+                    while ser.outWaiting()>0:
+                        print("waiting for serial")
                     ser.write(onForm.encode())
                     serRead = True
                 except:
                     print("error to write command")
-                time.sleep(2)
+                #time.sleep(2)
                 print('serial write on')
         else:
             for x,y in message["data"].items():
                 print(x)
                 print(y["status"])
                 if y["status"] == "0":
-                    time.sleep(2)
+                    #time.sleep(2)
                     offForm2 = "!OFF,{}".format(x)
                     try:
                         serRead = False
-                        while ser.inWaiting()>0:
+                        while ser.outWaiting()>0:
                             print("waiting for serial")
                         ser.write(offForm2.encode())
                         serRead = True
@@ -1022,11 +1024,11 @@ def stream_handler(message):
                     #ser.flushInput()
                     print('serial write off')
                 else:
-                    time.sleep(2)
+                    #time.sleep(2)
                     onForm2 = "!ON,{}".format(x)
                     try:
                         serRead = False
-                        while ser.inWaiting()>0:
+                        while ser.outWaiting()>0:
                             print("waiting for serial")
                         ser.write(onForm2.encode())
                         serRead = True
@@ -1042,10 +1044,10 @@ def stream_handler(message):
             print("updated node id is {} value is {}".format(message["path"].split("/")[1],message["data"]))
             if message["data"] == "0":
                 offForm3 = "!OFF,{}".format(message["path"].split("/")[1])
-                time.sleep(2)
+                #time.sleep()
                 try:
                     serRead = False
-                    while ser.inWaiting()>0:
+                    while ser.outWaiting()>0:
                         print("waiting for serial")
                     ser.write(offForm3.encode())
                     serRead = True
@@ -1054,10 +1056,10 @@ def stream_handler(message):
                 print('serial write off')
             else:
                 onForm3 = "!ON,{}".format(message["path"].split("/")[1])
-                time.sleep(2)
+                #time.sleep(0.5)
                 try:
                     serRead = False
-                    while ser.inWaiting()>0:
+                    while ser.outWaiting()>0:
                         print("waiting for serial")
                     ser.write(onForm3.encode())
                     serRead = True
