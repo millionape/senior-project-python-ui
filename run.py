@@ -389,15 +389,15 @@ class Thread(QThread):
         self.quit()
         self.wait()
     def take_photo(self):
-            self.take.emit(self.imgSave)
+        self.take.emit(self.imgSave)
     def stop(self):
-            self.flag = False
-            #self.quit()
-            self.cap.release()
-            self.state.emit()
-            self.stop()
-            #self.quit()
-            #self.terminate()
+        self.flag = False
+        #self.quit()
+        self.cap.release()
+        self.state.emit()
+        self.stop()
+        #self.quit()
+        #self.terminate()
 class HomeApp(QMainWindow):
     def __init__(self, parent=None):
         global uid
@@ -608,6 +608,13 @@ class MyApp(QMainWindow):
         self.bleThread = ThreadBLE(self)
         self.bleThread.state.connect(self.bleCallback)
         self.bleThread.start()
+
+        self.th = Thread(self)
+        self.th.changePixmap.connect(self.setImage)
+        self.th.state.connect(self.closeCam)
+        self.th.take.connect(self.savePhoto)
+        #self.th.setTerminationEnabled(True)
+        self.th.start()
         
         with open('bleAuth.json') as json_file:
             try:
@@ -742,43 +749,44 @@ class MyApp(QMainWindow):
                         self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
                 print("photo saved!")
     def takePhoto(self,event):
-        flag = False
-        try:
-            fh = open('trained_knn_model.clf', 'r')
-            fh.close()
-            flag=True
-        except FileNotFoundError:
-            msgBox = QMessageBox()
-            msgBox.setText("Error")
-            msgBox.setInformativeText("Unable to locate faces. Do you want to add a new face")
-            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-            msgBox.setDefaultButton(QMessageBox.Yes)
-            ret = msgBox.exec_()
-            if ret == QMessageBox.Yes:
-                print("Yes!!!!")
-            elif ret == QMessageBox.Cancel:
-                print("Nooooooooo!!!!")
-            #QMessageBox.about(self, "Info", "Unable to locate faces.")
-            # Keep preset values
-        if flag:
-            print("Taking photos...")
-            self.th = Thread(self)
-            self.th.changePixmap.connect(self.setImage)
-            self.th.state.connect(self.closeCam)
+        self.th.takePhoto()
+        # flag = False
+        # try:
+        #     fh = open('trained_knn_model.clf', 'r')
+        #     fh.close()
+        #     flag=True
+        # except FileNotFoundError:
+        #     msgBox = QMessageBox()
+        #     msgBox.setText("Error")
+        #     msgBox.setInformativeText("Unable to locate faces. Do you want to add a new face")
+        #     msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        #     msgBox.setDefaultButton(QMessageBox.Yes)
+        #     ret = msgBox.exec_()
+        #     if ret == QMessageBox.Yes:
+        #         print("Yes!!!!")
+        #     elif ret == QMessageBox.Cancel:
+        #         print("Nooooooooo!!!!")
+        #     #QMessageBox.about(self, "Info", "Unable to locate faces.")
+        #     # Keep preset values
+        # if flag:
+        #     #print("Taking photos...")
+        #     # self.th = Thread(self)
+        #     # self.th.changePixmap.connect(self.setImage)
+        #     # self.th.state.connect(self.closeCam)
             
-            self.th.take.connect(self.savePhoto)
+        #     # self.th.take.connect(self.savePhoto)
             
-            self.th.setTerminationEnabled(True)
-            self.th.start()
-            self.ui.btn_photo.setEnabled(False)
-            self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
-            QTimer.singleShot(4200, lambda: self.th.stop())
-            QTimer.singleShot(5500, lambda: self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat)))
-            QTimer.singleShot(4000, lambda: self.ui.btn_photo.setDisabled(False))
-            QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Hold..(3)"))
-            QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Hold..(2)"))
-            QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Hold..(1)"))
-            QTimer.singleShot(3500, lambda: self.th.take_photo())
+        #     # self.th.setTerminationEnabled(True)
+        #     # self.th.start()
+        #     self.ui.btn_photo.setEnabled(False)
+        #     self.ui.btn_photo.setStyleSheet('QPushButton {background-color: #A3C1DA; color: black;}')
+        #     QTimer.singleShot(4200, lambda: self.th.stop())
+        #     QTimer.singleShot(5500, lambda: self.ui.label_3.setPixmap(QPixmap.fromImage(self.convertToQtFormat)))
+        #     QTimer.singleShot(4000, lambda: self.ui.btn_photo.setDisabled(False))
+        #     QTimer.singleShot(1000, lambda: self.ui.btn_photo.setText("Hold..(3)"))
+        #     QTimer.singleShot(2000, lambda: self.ui.btn_photo.setText("Hold..(2)"))
+        #     QTimer.singleShot(3000, lambda: self.ui.btn_photo.setText("Hold..(1)"))
+        #     QTimer.singleShot(3500, lambda: self.th.take_photo())
         #QTimer.singleShot(7100, lambda: self.ui.btn_photo.setText("Take a photo"))
     def printTest(self):
         print('clicked !!!!!')
