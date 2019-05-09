@@ -286,7 +286,7 @@ class MyAppSignIn(QMainWindow):
         elif x==4:
             self.ui.label_2.setText("Success enroll new finger.")
             app = PasswordSettingApp()
-            app..showFullScreen() 
+            app.showFullScreen() 
             # myappDash = MyApp()
             # myappDash.show()
             self.close()
@@ -646,7 +646,7 @@ class MyApp(QMainWindow):
         if x == 1:
             #self.thFingerCompare.stop()
             homeapp = HomeApp(self)
-            homeapp..showFullScreen()
+            homeapp.showFullScreen()
         elif x == 2:
             #self.thFingerCompare.stop()
             msg = QMessageBox()
@@ -734,7 +734,7 @@ class MyApp(QMainWindow):
                                     if faceAuth+passAuth+bleAuth+fingerAuth >= 2:
                                             faceAuth,passAuth,bleAuth,fingerAuth = False,False,False,False
                                             homeapp = HomeApp(self)
-                                            homeapp..showFullScreen()
+                                            homeapp.showFullScreen()
                                     else:
                                             QMessageBox.about(self, "Info", "Please authenicate with 1 more method")
                             else:
@@ -830,7 +830,7 @@ class MyApp(QMainWindow):
                         self.ui.password_field.setStyleSheet('color: white')
                         self.ui.password_field.setText("")
                         homeapp = HomeApp(self)
-                        homeapp..showFullScreen()
+                        homeapp.showFullScreen()
                         
                 else:
                     passcodes = ""
@@ -948,7 +948,7 @@ class PasswordSettingApp(QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok)
                     retval = msg.exec_()
                     myappDash = MyApp()
-                    myappDash..showFullScreen()
+                    myappDash.showFullScreen()
                     self.close()
 
 
@@ -1111,7 +1111,7 @@ if __name__ == '__main__':
                 if uid != "":
                     my_stream = db.child(uid).stream(stream_handler)
                 myappDash = MyApp()
-                myappDash..showFullScreen()
+                myappDash.showFullScreen()
                 
             except:
                 print('some error')
